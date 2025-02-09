@@ -1,0 +1,14 @@
+room:
+  dimensions:
+    [9.0,7.0,3.0]
+  rt60_tgt: 0.5
+source:
+  position:
+    [2.5,3.73,1.76]
+  file: ../audio/test1.wav
+  delay: 1.3
+microphones:
+  [
+    [6.3,4.87,1.2],
+    [6.3,4.93,1.2],
+  ]
