@@ -6,21 +6,24 @@ from scipy.io import wavfile
 config = config_handler.get_config()
 
 class Room:
-    def __init__(self, dimensions:list[float], rt60_tgt:float):
+    def __init__(self, dimensions:list[float], rt60_tgt:float, absorption:float|None=None):
         self.dimensions = dimensions
         self.rt60_tgt = rt60_tgt
-        e_absorption, max_order = pra.inverse_sabine(rt60_tgt, dimensions)
+        if absorption is None:
+            e_absorption, max_order = pra.inverse_sabine(rt60_tgt, dimensions)
+        else:
+            e_absorption = float(absorption)
         self.room = pra.ShoeBox(
             dimensions,
             fs=config.audio.sample_rate, 
             materials=pra.Material(e_absorption), 
-            use_rand_ism=True,
+            use_rand_ism=False,
             max_rand_disp=0.5
         )
     
     @classmethod
     def from_room_spec(cls, room_spec:dict):
-        return cls(room_spec['dimensions'], room_spec['rt60_tgt'])
+        return cls(room_spec['dimensions'], room_spec['rt60_tgt'], room_spec.get('absorption', None))
 
 
 class RIRGenerator:

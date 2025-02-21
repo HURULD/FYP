@@ -1,26 +1,23 @@
 import numpy as np
 
-def compute_rtf(h_mic1, h_mic2, n_fft=None):
-    import numpy as np
-    
+def compute_rtf(mics_rir:np.ndarray, reference=0, n_fft=None):
+    # Computes the RTF for all microphones from a given reference microphone
     # pick an FFT size (power of two) at least as large as the longer RIR
     if n_fft is None:
-        L = max(len(h_mic1), len(h_mic2))
+        L = max([len(mic) for mic in mics_rir])
         n_fft = 1
         while n_fft < L:
             n_fft *= 2
     
-    # Compute the frequency-domain representation
-    H1 = np.fft.rfft(h_mic1, n=n_fft)
-    H2 = np.fft.rfft(h_mic2, n=n_fft)
+    # Compute the frequency-domain representation of each mic's RIR
+    mics_h = [np.rfft(mic, n=n_fft) for mic in mics_rir]
 
     # Avoid numerical issues
     EPS = 1e-12
-    H1_safe = np.where(np.abs(H1) < EPS, EPS, H1)
+    mics_h_safe = [np.where(np.abs(mic_h) < EPS, EPS, mic_h) for mic_h in mics_h] 
     
     # Ratio
-    RTF = np.divide(H2, H1_safe)
-    
+    RTF = [np.divide(mic_h, mics_h_safe[reference]) for mic_h in mics_h_safe]
     return RTF
 
 def meansquared_error(x, y):
