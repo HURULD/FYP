@@ -52,7 +52,7 @@ class RIRGenerator:
             rir_gen.add_microphones(room_spec['microphones'])
         return rir_gen
     
-    def simulate(self):
+    def _simulate(self):
         self.room.room.simulate()
         
     def measure_rt60(self):
@@ -63,3 +63,19 @@ class RIRGenerator:
             norm=True,
             bitdepth=np.int16,
         )
+    def get_acoustic_transfer_functions(self):
+        self._simulate()
+        # a[0] represents the first sim result (if using multiple sim techniques, default is ISM)
+        h = [a[0] for a in self.room.room.rir]
+        # offset h to allow for negative time indexes
+        h_offset = [np.pad(h_i, (len(h_i), 0), 'constant', constant_values=(0,0)) for h_i in h]
+        print(len(h_offset[0]))
+        print(len(h[0]))
+        #debug
+        import matplotlib.pyplot as plt
+        plt.subplot(2,1,1)
+        plt.plot(h[0])
+        plt.subplot(2,1,2)
+        plt.plot(h_offset[0])
+        plt.show()
+        return h_offset

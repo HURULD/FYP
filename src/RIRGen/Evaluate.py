@@ -10,7 +10,7 @@ def compute_rtf(mics_rir:np.ndarray, reference=0, n_fft=None):
             n_fft *= 2
     
     # Compute the frequency-domain representation of each mic's RIR
-    mics_h = [np.rfft(mic, n=n_fft) for mic in mics_rir]
+    mics_h = [np.fft.rfft(mic, n=n_fft) for mic in mics_rir]
 
     # Avoid numerical issues
     EPS = 1e-12

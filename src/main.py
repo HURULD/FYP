@@ -7,6 +7,7 @@ import yaml
 import config_handler
 import helpers
 import Visualisations.vis as vis
+import RIRGen.Evaluate as Eval
 
 logger = logging.getLogger(__name__)  
 
@@ -24,17 +25,16 @@ def main():
     # Load room specifications
     rs = yaml.safe_load(open(args.room_file))
     rirgen = RIRGen.RIRGenerator.from_room_spec(rs)
-    rirgen.simulate()
     
     # Compute the relative transfer function from mic 0 to mic 1
-    h_mic0 = rirgen.room.room.rir[0][0]
-    h_mic1 = rirgen.room.room.rir[1][0]
+    
+    h_mics = rirgen.get_acoustic_transfer_functions()
     mic_0_audio = rirgen.room.room.mic_array.signals[0, :]
     mic_1_audio = rirgen.room.room.mic_array.signals[1, :]
-    rtf_01 = helpers.compute_rtf(h_mic0, h_mic1)
-    rrir_01 = np.fft.irfft(rtf_01)
+    rtf = Eval.compute_rtf(h_mics)
+    rrir = np.fft.irfft(rtf)
     
-    mic_1_recovered = np.convolve(mic_0_audio, rrir_01)
+    mic_1_recovered = np.convolve(mic_0_audio, rrir[1])
     mse = helpers.meansquared_error(mic_1_recovered, mic_1_audio)
     print(f"Mean Squared Error: {mse}")
     
@@ -51,8 +51,8 @@ def main():
                 'text.usetex': True,
                 'pgf.rcfonts': False,
             })
-        vis.defaultPlot(rirgen, rrir_01, mic_1_recovered)
-        
+        #vis.defaultPlot(rirgen, rrir[1], mic_1_recovered)
+        vis.plotAllRir(rrir)
         if args.print_format == 'show':
             plt.show()
         elif args.print_format == 'png':

@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
+import config_handler as conf
 
 def BeamPatternPolar(arrayShape:np.array, arrayWeights:np.array, thetaRange = np.linspace(0, 2*np.pi, 1000)):
     raise NotImplementedError
@@ -7,7 +8,8 @@ def BeamPatternPolar(arrayShape:np.array, arrayWeights:np.array, thetaRange = np
     # weightedArray = arrayWeights.conj().T @ arrayShape
     # for theta in thetaRange:
     
-def defaultPlot(rirgen,rrir_01,mic_1_recovered):
+def defaultPlot(rirgen,rrir,mic_recovered):
+    # TODO: Make this more general
     # Create a plot
         plt.figure()
         
@@ -25,13 +27,41 @@ def defaultPlot(rirgen,rrir_01,mic_1_recovered):
         plt.xlabel("Time [s]")
 
         plt.subplot(4, 1, 3)
-        plt.plot(np.arange(len(rrir_01)) / rirgen.room.room.fs, rrir_01)
+        plt.plot(np.arange(len(rrir)) / rirgen.room.room.fs, rrir)
         plt.title("The RRIR from mic 0 to mic 1")
         plt.xlabel("Time [s]")
         
         plt.subplot(4, 1, 4)
-        plt.plot(np.arange(len(mic_1_recovered)) / rirgen.room.room.fs, mic_1_recovered)
+        plt.plot(np.arange(len(mic_recovered)) / rirgen.room.room.fs, mic_recovered)
         plt.title("Recovered mic 1 signal")
         plt.xlabel("Time [s]")
 
         plt.tight_layout()    # # Create a plot
+        
+def plotAllRir(rrir):
+    plt.figure()
+    for i, rrir_i, in enumerate(rrir):
+        
+        #RRIR time domain
+        plt.subplot(len(rrir), 3, (3*i)+1)
+        plt.plot((np.arange(len(rrir_i))-(0.5*len(rrir_i))) / conf.get_config().audio.sample_rate, rrir_i)
+        plt.title("The RRIR from mic 0 to mic " + str(i))
+        plt.xlabel("Time [s]")
+        plt.ylabel("Amplitude")
+        
+        # RTF Magnitude
+        plt.subplot(len(rrir), 3, (3*i)+2)
+        rtf_i = np.fft.fft(rrir_i)
+        plt.plot(np.arange(len(rtf_i))-(0.5*len(rrir_i)), np.abs(rtf_i))
+        plt.title("The RTF from mic 0 to mic " + str(i))
+        plt.xlabel("Frequency [Hz]")
+        plt.ylabel("Magnitude")
+        
+        # RTF Phase
+        plt.subplot(len(rrir), 3, (3*i)+3)
+        plt.plot(np.arange(len(rtf_i))-(0.5*len(rrir_i)), np.angle(rtf_i))
+        plt.title("The RTF from mic 0 to mic " + str(i))
+        plt.xlabel("Frequency [Hz]")
+        plt.ylabel("Phase [rad]")
+        
+    plt.tight_layout()
