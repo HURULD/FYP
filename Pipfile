@@ -8,6 +8,7 @@ pyroomacoustics = "*"
 matplotlib = "*"
 pyyaml = "*"
 pytest = "*"
+scipy = "*"
 
 [dev-packages]
 
