@@ -69,13 +69,4 @@ class RIRGenerator:
         h = [a[0] for a in self.room.room.rir]
         # offset h to allow for negative time indexes
         h_offset = [np.pad(h_i, (len(h_i), 0), 'constant', constant_values=(0,0)) for h_i in h]
-        print(len(h_offset[0]))
-        print(len(h[0]))
-        #debug
-        import matplotlib.pyplot as plt
-        plt.subplot(2,1,1)
-        plt.plot(h[0])
-        plt.subplot(2,1,2)
-        plt.plot(h_offset[0])
-        plt.show()
         return h_offset

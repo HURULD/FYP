@@ -1,3 +1,5 @@
 __pycache__/
 *.pgf
 *.png
+docs/external/
+.pytest_cache/

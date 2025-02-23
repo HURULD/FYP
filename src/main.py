@@ -5,9 +5,9 @@ import matplotlib
 import matplotlib.pyplot as plt
 import yaml
 import config_handler
-import helpers
 import Visualisations.vis as vis
 import RIRGen.Evaluate as Eval
+import scipy as sp
 
 logger = logging.getLogger(__name__)  
 
@@ -16,7 +16,8 @@ def main():
     parser.add_argument('room_file', type=str, help='Room specification file')
     parser.add_argument('--config_file', type=str, help='Configuration file to be used', default='config.yaml')
     parser.add_argument('--audio_out', type=str, help='Output audio file to be saved')
-    parser.add_argument('--print_format', type=str, help='Output format for measurements')
+    parser.add_argument('-p','--print_format', type=str, help='Output format for measurements')
+    parser.add_argument("-v","--visualise", type=str, help="Chart type to visualise the data", default="basic")
     args = parser.parse_args()
     # Load config
     config_handler.load_config(args.config_file)
@@ -32,17 +33,20 @@ def main():
     mic_0_audio = rirgen.room.room.mic_array.signals[0, :]
     mic_1_audio = rirgen.room.room.mic_array.signals[1, :]
     rtf = Eval.compute_rtf(h_mics)
-    rrir = np.fft.irfft(rtf)
+    rrir = [np.fft.irfft(rtf_n) for rtf_n in rtf]
     
-    mic_1_recovered = np.convolve(mic_0_audio, rrir[1])
-    mse = helpers.meansquared_error(mic_1_recovered, mic_1_audio)
+    
+    mic_1_recovered = sp.signal.fftconvolve(mic_0_audio,rrir[1])
+    mse = Eval.meansquared_error(mic_1_recovered, mic_1_audio)
     print(f"Mean Squared Error: {mse}")
-    
+    print(f"min MSE: {min(mse)}")
+    print(f"Delay needed: {np.where(mse == min(mse))[0][0]}")
     
     if args.audio_out is not None:
         rirgen.save_audio(args.audio_out)
-    
+        
     if args.print_format is not None:
+        # Set up matplotlib when using PGF.
         if args.print_format == 'pgf':
             matplotlib.use("pgf")
             matplotlib.rcParams.update({
@@ -52,7 +56,15 @@ def main():
                 'pgf.rcfonts': False,
             })
         #vis.defaultPlot(rirgen, rrir[1], mic_1_recovered)
-        vis.plotAllRir(rrir)
+        if args.visualise == 'basic':
+            vis.defaultPlot(rirgen, rrir[1], mic_1_recovered)
+        elif args.visualise == 'all':
+            rrir_shifted = np.fft.fftshift(rrir)
+            vis.plotAllRir(rrir_shifted)
+        else:
+            logger.error('Invalid visualisation type. Please use either "basic" or "all"')
+            raise ValueError('Invalid visualisation type. Please use either "basic" or "all"')
+
         if args.print_format == 'show':
             plt.show()
         elif args.print_format == 'png':

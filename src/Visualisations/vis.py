@@ -37,7 +37,7 @@ def defaultPlot(rirgen,rrir,mic_recovered):
         plt.xlabel("Time [s]")
 
         plt.tight_layout()    # # Create a plot
-        
+
 def plotAllRir(rrir):
     plt.figure()
     for i, rrir_i, in enumerate(rrir):

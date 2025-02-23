@@ -2,7 +2,7 @@ room:
   dimensions:
     [10.0,10.0,4.0]
   rt60_tgt: 0
-  absorption: 100
+  absorption: 1
   
 source:
   position:
@@ -12,6 +12,6 @@ source:
 
 microphones:
   [
-    [2.5,4.9,2],
-    [2.5,5.1,2]
+    [2.5,5,2],
+    [5,5,2]
   ]
