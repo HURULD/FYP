@@ -1,4 +1,6 @@
 import numpy as np
+import scipy.signal
+import config_handler
 
 def compute_rtf(mics_rir:np.ndarray, reference=0, n_fft=None):
     # Computes the RTF for all microphones from a given reference microphone
@@ -15,31 +17,32 @@ def compute_rtf(mics_rir:np.ndarray, reference=0, n_fft=None):
     # Avoid numerical issues
     EPS = 1e-12
     mics_h_safe = [np.where(np.abs(mic_h) < EPS, EPS, mic_h) for mic_h in mics_h]
-    # debug
-    import matplotlib.pyplot as plt
-    plt.subplot(2,1,1)
-    plt.plot(mics_rir[0])
-    plt.plot(mics_rir[1])
+    # # debug
+    # import matplotlib.pyplot as plt
+    # plt.subplot(2,1,1)
+    # plt.plot(mics_rir[0])
+    # plt.plot(mics_rir[1])
     
     # Ratio
     RTF = [np.divide(mic_h, mics_h_safe[reference]) for mic_h in mics_h_safe]
-    plt.subplot(2,1,2)
-    plt.plot(np.fft.ifft(RTF[0]))
-    plt.plot(np.fft.ifft(RTF[1]))
-    plt.show()
+    # plt.subplot(2,1,2)
+    # plt.plot(np.fft.ifft(RTF[0]))
+    # plt.plot(np.fft.ifft(RTF[1]))
+    # plt.show()
     return RTF
 
 def meansquared_error(x, y):
-    mse = []
     # Handle case where x and y are not the same length
     if len(x) != len(y):
         #Compute MSE for the overlapping region
         overlap = min(len(x), len(y))
         x = x[:overlap]
         y = y[:overlap]
-    for i in range(128):
-        x_shift = x[i:]
-        y_shift = y[:len(x_shift)]
-        mse.append(np.mean((x_shift - y_shift) ** 2))
-    return mse
     return np.mean((x - y) ** 2)
+
+def meansquared_error_delay_corrected(x, y):
+    correlation = scipy.signal.correlate(x, y, mode='full')
+    delay = np.argmax(correlation) - (len(y) - 1)
+    x = np.roll(x, -delay)
+    print(f"Estimated delay: {delay} samples, {delay/config_handler.get_config().audio.sample_rate} seconds")
+    return meansquared_error(x, y)

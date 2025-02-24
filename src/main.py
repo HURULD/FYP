@@ -37,10 +37,8 @@ def main():
     
     
     mic_1_recovered = sp.signal.fftconvolve(mic_0_audio,rrir[1])
-    mse = Eval.meansquared_error(mic_1_recovered, mic_1_audio)
+    mse = Eval.meansquared_error_delay_corrected(mic_1_recovered, mic_1_audio)
     print(f"Mean Squared Error: {mse}")
-    print(f"min MSE: {min(mse)}")
-    print(f"Delay needed: {np.where(mse == min(mse))[0][0]}")
     
     if args.audio_out is not None:
         rirgen.save_audio(args.audio_out)
