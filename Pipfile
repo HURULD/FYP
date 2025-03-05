@@ -9,6 +9,8 @@ matplotlib = "*"
 pyyaml = "*"
 pytest = "*"
 scipy = "*"
+pygame = "*"
+pyaudio = "*"
 
 [dev-packages]
 

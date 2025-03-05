@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import config_handler as conf
+import pygame
 
 def BeamPatternPolar(arrayShape:np.array, arrayWeights:np.array, thetaRange = np.linspace(0, 2*np.pi, 1000)):
     raise NotImplementedError
@@ -65,3 +66,45 @@ def plotAllRir(rrir):
         plt.ylabel("Phase [rad]")
         
     plt.tight_layout()
+    
+def draw_room_from_spec(room_spec:dict):
+    dimensions = room_spec['room']['dimensions']
+    sources = room_spec.get('sources', [])
+    microphones = room_spec.get('microphones', [])
+    
+    pygame.init()
+    screen = pygame.display.set_mode((800, 600))
+    pygame.display.set_caption("Room Visualisation")
+    scale = 40 # 1m = 40px
+    offsetx, offsety = 100, 100
+    def render():
+        # Draw the room from the dimensions
+        screen.fill((0,0,0))
+        pygame.draw.rect(screen, (255, 255, 255), (offsetx,offsety, int(dimensions[0]*scale), int(dimensions[1]*scale)),5,4)
+        for source in sources:
+            pygame.draw.circle(screen, (255, 0, 0), (offsetx+int(source['position'][0]*scale), offsety+int(source['position'][1]*scale)), 5)
+        for mic in microphones:
+            pygame.draw.circle(screen, (0,255,0), (offsetx+int(mic[0]*scale), offsety+int(mic[1]*scale)), 5)
+        pygame.draw.line(screen, (255,255,255), (10,10), (10+scale, 10), 5)
+        pygame.display.flip()
+    running = True
+    drag = False
+    while running:
+        for event in pygame.event.get():
+            # change scale with scroll wheel
+            if event.type == pygame.MOUSEWHEEL:
+                scale += event.y
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if event.button == 1:
+                    drag = True
+            if event.type == pygame.MOUSEBUTTONUP:
+                if event.button == 1:
+                    drag = False
+            if event.type == pygame.MOUSEMOTION:
+                if drag:
+                    offsetx += event.rel[0]
+                    offsety += event.rel[1]
+            if event.type == pygame.QUIT:
+                running = False
+            render()
+    pygame.quit()

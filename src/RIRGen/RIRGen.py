@@ -45,9 +45,10 @@ class RIRGenerator:
     def from_room_spec(cls, room_spec:dict):
         room = Room.from_room_spec(room_spec['room'])
         rir_gen = cls(room)
-        if 'source' in room_spec:
-            _, audio = wavfile.read(room_spec['source']['file'])
-            rir_gen.add_source(room_spec['source']['position'], audio, room_spec['source']['delay'])
+        if 'sources' in room_spec:
+            for source in room_spec['sources']:
+                _, audio = wavfile.read(source['file'])
+                rir_gen.add_source(source['position'], audio, source['delay'])
         if 'microphones' in room_spec:
             rir_gen.add_microphones(room_spec['microphones'])
         return rir_gen
@@ -70,3 +71,6 @@ class RIRGenerator:
         # offset h to allow for negative time indexes
         h_offset = [np.pad(h_i, (len(h_i), 0), 'constant', constant_values=(0,0)) for h_i in h]
         return h_offset
+    
+    def get_mic_audio(self):
+        return [mic for mic in self.room.mic_array]

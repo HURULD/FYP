@@ -4,11 +4,11 @@ room:
   rt60_tgt: 0
   absorption: 1
   
-source:
-  position:
-    [7.5,5,2]
-  file: ../audio/test1.wav
-  delay: 1
+sources:
+  - position:
+      [7.5,5,2]
+    file: ../audio/test1.wav
+    delay: 1
 
 microphones:
   [

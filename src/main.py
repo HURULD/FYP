@@ -24,8 +24,8 @@ def main():
     import RIRGen.RIRGen as RIRGen
     
     # Load room specifications
-    rs = yaml.safe_load(open(args.room_file))
-    rirgen = RIRGen.RIRGenerator.from_room_spec(rs)
+    room_spec = yaml.safe_load(open(args.room_file))
+    rirgen = RIRGen.RIRGenerator.from_room_spec(room_spec)
     
     # Compute the relative transfer function from mic 0 to mic 1
     
@@ -34,7 +34,6 @@ def main():
     mic_1_audio = rirgen.room.room.mic_array.signals[1, :]
     rtf = Eval.compute_rtf(h_mics)
     rrir = [np.fft.irfft(rtf_n) for rtf_n in rtf]
-    
     
     mic_1_recovered = sp.signal.fftconvolve(mic_0_audio,rrir[1])
     mse = Eval.meansquared_error_delay_corrected(mic_1_recovered, mic_1_audio)
@@ -72,6 +71,8 @@ def main():
         else:
             logger.error('Invalid print format. Please use either "show", "png" or "pgf"')
             raise ValueError('Invalid print format. Please use either "show", "png" or "pgf"')
+    if args.visualise == 'pygame':
+        vis.draw_room_from_spec(room_spec)
 
 if __name__ == '__main__':
     main()
