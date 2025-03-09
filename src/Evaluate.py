@@ -36,7 +36,7 @@ def meansquared_error_delay_corrected(x, y):
     correlation = scipy.signal.correlate(x, y, mode='full')
     delay = np.argmax(correlation) - (len(y) - 1)
     x = np.roll(x, -delay)
-    print(f"Estimated delay: {delay} samples, {delay/config_handler.get_config().audio.sample_rate} seconds")
+    print(f"Estimated delay: {delay} samples, {delay / config_handler.get_config().audio.sample_rate} seconds")
     return meansquared_error(x, y)
 
 def filter_total_mse(x, y, filter:AdaptiveFilters.AdaptiveFilter):

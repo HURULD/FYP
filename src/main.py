@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import yaml
 import config_handler
 import Visualisations.vis as vis
-import RIRGen.Evaluate as Eval
+import Evaluate as Eval
 import scipy as sp
 
 logger = logging.getLogger(__name__)  
@@ -35,7 +35,13 @@ def main():
     rtf = Eval.compute_rtf(h_mics)
     rrir = [np.fft.irfft(rtf_n) for rtf_n in rtf]
     
-    mic_1_recovered = sp.signal.fftconvolve(mic_0_audio,rrir[1])
+    # Use an adaptive filter to estimate the RTF
+    import Estimators.AdaptiveFilters as AdaptiveFilters
+    lms = AdaptiveFilters.LMS(10000, 0.0000001)
+    lms.full_simulate(mic_0_audio, mic_1_audio)
+    filter_error = Eval.filter_step_error(mic_0_audio, mic_1_audio, lms)
+    
+    mic_1_recovered = sp.signal.convolve(mic_0_audio,rrir[1])
     mse = Eval.meansquared_error_delay_corrected(mic_1_recovered, mic_1_audio)
     print(f"Mean Squared Error: {mse}")
     
@@ -58,6 +64,8 @@ def main():
         elif args.visualise == 'all':
             rrir_shifted = np.fft.fftshift(rrir)
             vis.plotAllRir(rrir_shifted)
+        elif args.visualise == 'filter':
+            vis.filter_performance(filter_error)
         else:
             logger.error('Invalid visualisation type. Please use either "basic" or "all"')
             raise ValueError('Invalid visualisation type. Please use either "basic" or "all"')

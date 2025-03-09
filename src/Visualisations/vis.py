@@ -1,6 +1,8 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import config_handler as conf
+import os
+os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
 import pygame
 
 def BeamPatternPolar(arrayShape:np.array, arrayWeights:np.array, thetaRange = np.linspace(0, 2*np.pi, 1000)):
@@ -108,3 +110,11 @@ def draw_room_from_spec(room_spec:dict):
                 running = False
             render()
     pygame.quit()
+
+def filter_performance(filter_error):
+    print(filter_error[~np.isnan(filter_error)])
+    plt.figure()
+    plt.plot(filter_error)
+    plt.title("Filter Performance")
+    plt.xlabel("Sample")
+    plt.ylabel("MSE")
