@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import config_handler as conf
+from scipy.fft import fft, fftfreq, fftshift
 import os
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
 import pygame
@@ -11,7 +12,7 @@ def BeamPatternPolar(arrayShape:np.array, arrayWeights:np.array, thetaRange = np
     # weightedArray = arrayWeights.conj().T @ arrayShape
     # for theta in thetaRange:
     
-def defaultPlot(rirgen,rrir,mic_recovered):
+def defaultRIRPlot(rirgen,rrir,mic_recovered):
     # TODO: Make this more general
     # Create a plot
         plt.figure()
@@ -118,3 +119,29 @@ def filter_performance(filter_error):
     plt.title("Filter Performance")
     plt.xlabel("Sample")
     plt.ylabel("MSE")
+    
+def fft_default_plot(signal,sample_rate):
+    
+    N = len(signal) # N samples
+    T = 1 / sample_rate # Sample period
+    
+    yf = fft(signal)
+    xf = fftfreq(N, T)
+    xf = fftshift(xf)
+    yplot = fftshift(yf)
+    
+    plt.figure()
+    plt.subplot(1,2,1)
+    plt.plot(xf, 1.0/N * np.abs(yplot))
+    plt.xlabel('Frequency (Hz)')
+    plt.ylabel('Magnitude')
+    plt.grid()
+    
+    plt.subplot(1,2,2)
+    plt.plot(xf, 1.0/N * np.unwrap(np.angle(yplot)))
+    plt.xlabel('Frequency (Hz)')
+    plt.ylabel('Phase')
+    plt.grid()
+    
+    plt.tight_layout() 
+    plt.show()

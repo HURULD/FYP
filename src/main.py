@@ -60,7 +60,7 @@ def main():
             })
         #vis.defaultPlot(rirgen, rrir[1], mic_1_recovered)
         if args.visualise == 'basic':
-            vis.defaultPlot(rirgen, rrir[1], mic_1_recovered)
+            vis.defaultRIRPlot(rirgen, rrir[1], mic_1_recovered)
         elif args.visualise == 'all':
             rrir_shifted = np.fft.fftshift(rrir)
             vis.plotAllRir(rrir_shifted)

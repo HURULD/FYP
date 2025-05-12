@@ -5,6 +5,7 @@ from scipy import signal
 from scipy import fft
 import logging
 import matplotlib.pyplot as plt
+from Visualisations.vis import fft_default_plot
 
 log = logging.getLogger(__name__)
 
@@ -51,14 +52,10 @@ def test_nlms_lowpass_awgn():
                             ]
     
     reference_signal = signal.lfilter(reference_filter_taps, 1, input_noise)
-    plt.figure()
-    plt.plot(np.abs(fft.fft(reference_signal)))
-    plt.show()
+    fft_default_plot(reference_signal,8000)
     test_filter = AdaptiveFilters.NLMS(len(reference_filter_taps), 1)
     filter_output, error = test_filter.full_simulate(test_noise,reference_signal)
-    plt.figure()
-    plt.plot(np.abs(fft.fft(filter_output)))
-    plt.show()
+    fft_default_plot(filter_output,8000)
     mse = Evaluate.meansquared_error(reference_signal,filter_output)
     log.info("MSE: %d",mse)
     #log.info("Tap difference: %s", [x[0]-x[1] for x in zip(reference_filter_taps, test_filter.w)])
