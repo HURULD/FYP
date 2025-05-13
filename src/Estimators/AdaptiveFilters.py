@@ -50,12 +50,34 @@ class LMS(AdaptiveFilter):
 class NLMS(LMS):
     def __init__(self, tap_count, mu):
         super().__init__(tap_count=tap_count,mu=mu)
+        
+    @property
+    def norm_factor(self):
+        return np.dot(np.conjugate(self._delay_line), self._delay_line) + 1e-10 # Normalise based on signal power (+ a little bit to avoid errors)
 
     def step_update(self, x_sample, y_sample):
         self._delay_line = np.roll(self._delay_line,1)
         self._delay_line[0] = x_sample
         y_hat = np.dot(np.conjugate(self.w), self._delay_line)
         error = y_sample - y_hat
-        norm_factor = np.dot(np.conjugate(self._delay_line), self._delay_line) + 1e-10 # Normalise based on signal power (+ a little bit to avoid errors)
-        self.w = np.add(self.w, ((self.mu / norm_factor) * error * self._delay_line))
+        self.w = np.add(self.w, ((self.mu / self.norm_factor) * error * self._delay_line))
+        return y_hat, error
+    
+class PNLMS(NLMS):
+    def __init__(self, tap_count, mu, delta=0.01, p=0.01):
+        self._delta = delta
+        self._p = p
+        super().__init__(tap_count=tap_count,mu=mu)
+        
+    def step_update(self, x_sample, y_sample):
+        self._delay_line= np.roll(self._delay_line, 1)
+        self._delay_line[0] = x_sample
+        y_hat = np.dot(np.conjugate(self.w), self._delay_line)
+        error = y_sample - y_hat
+        l = np.amax(np.abs(self.w))
+        l = max(l, self._delta)
+        g = np.array([max((self._p*l),np.abs(w_n)) for w_n in self.w])
+        g_mean = np.mean(g)
+        sigma = np.mean(np.square(self._delay_line))
+        self.w = np.add(self.w, (self.mu / self.tap_count)*(g/g_mean)*((error*self._delay_line)/sigma))
         return y_hat, error
