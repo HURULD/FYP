@@ -53,20 +53,23 @@ def plotAllRir(rrir):
         plt.xlabel("Time [s]")
         plt.ylabel("Amplitude")
         
+        N = len(rrir)
+        rtf_i = fftshift(fft(rrir_i))
+        xf = fftfreq(len(rrir_i), conf.get_config().audio.sample_rate)
+        xf = fftshift(xf)
+        
         # RTF Magnitude
         plt.subplot(len(rrir), 3, (3*i)+2)
-        rtf_i = np.fft.fft(rrir_i)
-        plt.plot(np.arange(len(rtf_i))-(0.5*len(rrir_i)), np.abs(rtf_i))
+        plt.plot(xf, 1.0/N * np.abs(rtf_i))
         plt.title("The RTF from mic 0 to mic " + str(i))
         plt.xlabel("Frequency [Hz]")
         plt.ylabel("Magnitude")
         
         # RTF Phase
         plt.subplot(len(rrir), 3, (3*i)+3)
-        plt.plot(np.arange(len(rtf_i))-(0.5*len(rrir_i)), np.angle(rtf_i))
-        plt.title("The RTF from mic 0 to mic " + str(i))
-        plt.xlabel("Frequency [Hz]")
-        plt.ylabel("Phase [rad]")
+        plt.plot(xf, 1.0/N * np.unwrap(np.angle(rtf_i)))
+        plt.xlabel('Frequency (Hz)')
+        plt.ylabel('Phase')
         
     plt.tight_layout()
     
