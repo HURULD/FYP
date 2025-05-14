@@ -6,6 +6,9 @@ import pyroomacoustics as pra
 import config_handler as conf
 
 class AdaptiveFilter(ABC):
+    
+    w = np.array([])
+    
     @abstractmethod
     def step_update(self, x_sample:float, y_sample:float) -> tuple[float, float]:
         """Update filter weights with a new input sample."""
@@ -16,6 +19,8 @@ class AdaptiveFilter(ABC):
         """Apply the trained filter to an input signal."""
         pass
 
+    def apply_filter(self, x):
+        return signal.lfilter(self.w, 1, x)
 
 class LMS(AdaptiveFilter):
     def __init__(self, tap_count, mu):
@@ -39,9 +44,6 @@ class LMS(AdaptiveFilter):
         error = y_sample - y_hat
         self.w = np.add(self.w, (self.mu * error * self._delay_line))
         return y_hat, error
-    
-    def apply_filter(self, x):
-        return signal.lfilter(self.w, 1, x)
     
     def reset(self):
         self.w = np.zeros(self.tap_count)

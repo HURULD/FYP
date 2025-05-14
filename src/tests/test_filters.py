@@ -7,21 +7,21 @@ import logging
 import matplotlib.pyplot as plt
 import pytest
 from Visualisations.vis import fft_default_plot
+import random
 
 log = logging.getLogger(__name__)
 
 MSE_THRESHOLD = 1.5
 
 @pytest.mark.parametrize("filter_class, mu", [
-    (AdaptiveFilters.LMS, 0.001),
+    (AdaptiveFilters.LMS, 0.0001),
     (AdaptiveFilters.NLMS, 1),
     (AdaptiveFilters.PNLMS, 1),
 ])
 class TestAdaptiveFilters:
     def test_filter_lowpass_awgn(self, filter_class: AdaptiveFilters.AdaptiveFilter, mu):
         log.info("Starting %s test with lowpass filter", filter_class.__name__)
-        input_noise = np.random.normal(0, 1, 16000) # 16000 (2s) zero mean WGN samples 
-        test_noise = np.random.normal(0,1,16000)
+        input_noise = np.random.normal(0, 1, 16000) # 16000 (8s) zero mean WGN samples 
         # Reference FIR filter from http://t-filter.engineerjs.com/ with corner freq at 400Hz
         reference_filter_taps = [   
                                     -0.02010411882885732, -0.05842798004352509, -0.061178403647821976,
@@ -35,16 +35,16 @@ class TestAdaptiveFilters:
         
         reference_signal = signal.lfilter(reference_filter_taps, 1, input_noise)
         test_filter = filter_class(len(reference_filter_taps)+50, mu)
-        filter_output, error = test_filter.full_simulate(test_noise,reference_signal)
+        filter_output, error = test_filter.full_simulate(input_noise,reference_signal)
         mse = Evaluate.meansquared_error(reference_signal,filter_output)
         log.info("MSE: %d",mse)
-        #log.info("Tap difference: %s", [x[0]-x[1] for x in zip(reference_filter_taps, test_filter.w)])
+        log.info("Tap difference (learning curve): %s", np.mean([(x[0]-x[1])**2 for x in zip(reference_filter_taps, test_filter.w)]))
+        
         assert mse <= MSE_THRESHOLD
         
     def test_filter_highpass_awgn(self, filter_class: AdaptiveFilters.AdaptiveFilter, mu):
         log.info("Starting %s test with highpass filter", filter_class.__name__)
-        input_noise = np.random.normal(0, 1, 16000) # 16000 (2s) zero mean WGN samples 
-        test_noise = np.random.normal(0,1,16000)
+        input_noise = np.random.normal(0, 1, 16000) # 16000 (8s) zero mean WGN samples 
         # Reference FIR filter from http://t-filter.engineerjs.com/ with corner freq at 400Hz
         reference_filter_taps = [   
                                     0.02857983994169657,  -0.07328836181028245,  0.04512928732568175,
@@ -58,9 +58,30 @@ class TestAdaptiveFilters:
         
         reference_signal = signal.lfilter(reference_filter_taps, 1, input_noise)
         test_filter = filter_class(len(reference_filter_taps), mu)
-        filter_output, error = test_filter.full_simulate(test_noise,reference_signal)
+        filter_output, error = test_filter.full_simulate(input_noise,reference_signal)
         mse = Evaluate.meansquared_error(reference_signal,filter_output)
         log.info("MSE: %d",mse)
         #log.info("Tap difference: %s", [x[0]-x[1] for x in zip(reference_filter_taps, test_filter.w)])
         assert mse <= MSE_THRESHOLD
-        
+    
+    def test_filter_4tap_awgn(self, filter_class: AdaptiveFilters.AdaptiveFilter, mu):
+        log.info("Starting %s test with arbitrary 4 tap filter", filter_class.__name__)
+        input_noise = np.random.normal(0,1,16000)
+        # Reference filter
+        reference_filter_taps = [(random.random() * -2) + 1 for _ in range(4)]
+        reference_signal = signal.lfilter(reference_filter_taps, 1, input_noise)
+        test_filter:AdaptiveFilters.AdaptiveFilter = filter_class(len(reference_filter_taps), mu)
+        tap_mse = [ [] for _ in range(len(reference_filter_taps))]
+        y_hat = []
+        e = []
+        for x,y in zip(input_noise, reference_signal):
+            y_h, error = test_filter.step_update(x, y)
+            y_hat.append(y_h)
+            e.append(error)
+            for i in range(len(reference_filter_taps)):
+                tap_mse[i].append((test_filter.w[i]))
+        mse = Evaluate.meansquared_error(reference_signal,y_hat)
+        # for i in range(len(reference_filter_taps)):
+        #     plt.plot(np.arange(16000), [reference_filter_taps[i]]*16000, c=plt.get_cmap('tab10').colors[i])
+        #     plt.plot(tap_mse[i], linestyle='dashed')
+        # plt.show()
