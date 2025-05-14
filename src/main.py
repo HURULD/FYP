@@ -37,7 +37,7 @@ def main():
     
     # Use an adaptive filter to estimate the RTF
     import Estimators.AdaptiveFilters as AdaptiveFilters
-    lms = AdaptiveFilters.LMS(4, 0.0001)
+    lms = AdaptiveFilters.LMS(1024, 0.001)
     lms.full_simulate(mic_0_audio, mic_1_audio)
     mic_1_estimated, filter_error = Eval.filter_step_error(mic_0_audio, mic_1_audio, lms)
     
@@ -61,10 +61,9 @@ def main():
             })
         #vis.defaultPlot(rirgen, rrir[1], mic_1_recovered)
         if args.visualise == 'basic':
-            vis.defaultPlot(rirgen, rrir[1], mic_1_recovered)
+            vis.defaultRIRPlot(rirgen, rrir[1], mic_1_recovered)
         elif args.visualise == 'all':
-            rrir_shifted = np.fft.fftshift(rrir)
-            vis.plotAllRir(rrir_shifted)
+            vis.plotAllRir(rrir)
         elif args.visualise == 'filter':
             vis.filter_performance(filter_error)
         else:
