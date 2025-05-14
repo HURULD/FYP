@@ -37,12 +37,13 @@ def main():
     
     # Use an adaptive filter to estimate the RTF
     import Estimators.AdaptiveFilters as AdaptiveFilters
-    lms = AdaptiveFilters.LMS(10000, 0.0000001)
+    lms = AdaptiveFilters.LMS(4, 0.0001)
     lms.full_simulate(mic_0_audio, mic_1_audio)
-    filter_error = Eval.filter_step_error(mic_0_audio, mic_1_audio, lms)
+    mic_1_estimated, filter_error = Eval.filter_step_error(mic_0_audio, mic_1_audio, lms)
     
     mic_1_recovered = sp.signal.convolve(mic_0_audio,rrir[1])
-    mse = Eval.meansquared_error_delay_corrected(mic_1_recovered, mic_1_audio)
+    #mse = Eval.meansquared_error_delay_corrected(mic_1_recovered, mic_1_audio)
+    mse = Eval.meansquared_error_delay_corrected(mic_1_estimated, mic_1_audio)
     print(f"Mean Squared Error: {mse}")
     
     if args.audio_out is not None:

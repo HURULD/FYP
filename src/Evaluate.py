@@ -48,4 +48,4 @@ def filter_step_error(x, y, filter:AdaptiveFilters.AdaptiveFilter):
     error = np.zeros(len(y))
     for i in range(len(x)):
         y_hat[i], error[i] = filter.step_update(x[i], y[i])
-    return error
+    return y_hat, error
