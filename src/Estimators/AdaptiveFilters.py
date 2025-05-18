@@ -83,3 +83,18 @@ class PNLMS(NLMS):
         sigma = np.mean(np.square(self._delay_line))
         self.w = np.add(self.w, (self.mu / self.tap_count)*(g/g_mean)*((error*self._delay_line)/sigma))
         return y_hat, error
+
+class IPNLMS(PNLMS):
+    def __init__(self, tap_count, mu, delta=0.01, p=0.01, alpha = -0.5):
+        self.alpha = alpha
+        super().__init__(tap_count=tap_count,mu=mu,delta=delta,p=p)
+    
+    def step_update(self, x_sample, y_sample):
+        self._delay_line = np.roll(self._delay_line, 1)
+        self._delay_line[0] = x_sample
+        y_hat = np.dot(np.conjugate(self.w), self._delay_line)
+        error = y_sample - y_hat
+        w_norm_mean = np.sum(np.abs(self.w)) / self.tap_count
+        K = np.diag([(1-self.alpha) * w_norm_mean + (1+self.alpha) * np.abs(w_i) for w_i in self.w])
+        self.w = np.add(self.w, (self.mu * K * self._delay_line * error) / (self._delay_line.T * K * self._delay_line + self._delta))
+        return y_hat, error

@@ -18,6 +18,7 @@ MSE_THRESHOLD = 1.5
     (AdaptiveFilters.LMS, 0.0001),
     (AdaptiveFilters.NLMS, 1),
     (AdaptiveFilters.PNLMS, 1),
+    (AdaptiveFilters.IPNLMS,1)
 ])
 class TestAdaptiveFilters:
     def test_filter_lowpass_awgn(self, filter_class: AdaptiveFilters.AdaptiveFilter, mu):
