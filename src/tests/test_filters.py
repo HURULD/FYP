@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 import pytest
 from Visualisations.vis import fft_default_plot
 import random
+from Utils import Utils
 
 log = logging.getLogger(__name__)
 
@@ -21,7 +22,7 @@ MSE_THRESHOLD = 1.5
 class TestAdaptiveFilters:
     def test_filter_lowpass_awgn(self, filter_class: AdaptiveFilters.AdaptiveFilter, mu):
         log.info("Starting %s test with lowpass filter", filter_class.__name__)
-        input_noise = np.random.normal(0, 1, 16000) # 16000 (8s) zero mean WGN samples 
+        input_noise = Utils.GenSignal("noise",4,2000)
         # Reference FIR filter from http://t-filter.engineerjs.com/ with corner freq at 400Hz
         reference_filter_taps = [   
                                     -0.02010411882885732, -0.05842798004352509, -0.061178403647821976,
@@ -44,7 +45,7 @@ class TestAdaptiveFilters:
         
     def test_filter_highpass_awgn(self, filter_class: AdaptiveFilters.AdaptiveFilter, mu):
         log.info("Starting %s test with highpass filter", filter_class.__name__)
-        input_noise = np.random.normal(0, 1, 16000) # 16000 (8s) zero mean WGN samples 
+        input_noise = Utils.GenSignal('noise', 4, 2000) # 16000 (8s) zero mean WGN samples 
         # Reference FIR filter from http://t-filter.engineerjs.com/ with corner freq at 400Hz
         reference_filter_taps = [   
                                     0.02857983994169657,  -0.07328836181028245,  0.04512928732568175,
@@ -66,7 +67,7 @@ class TestAdaptiveFilters:
     
     def test_filter_4tap_awgn(self, filter_class: AdaptiveFilters.AdaptiveFilter, mu):
         log.info("Starting %s test with arbitrary 4 tap filter", filter_class.__name__)
-        input_noise = np.random.normal(0,1,16000)
+        input_noise = Utils.GenSignal('noise',4,2000)
         # Reference filter
         reference_filter_taps = [(random.random() * -2) + 1 for _ in range(4)]
         reference_signal = signal.lfilter(reference_filter_taps, 1, input_noise)

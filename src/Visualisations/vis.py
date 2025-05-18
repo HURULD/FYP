@@ -5,13 +5,17 @@ from scipy.fft import fft, fftfreq, fftshift
 import os
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
 import pygame
+from typing import Optional
 
 def BeamPatternPolar(arrayShape:np.array, arrayWeights:np.array, thetaRange = np.linspace(0, 2*np.pi, 1000)):
     raise NotImplementedError
     # magnitudes = []
     # weightedArray = arrayWeights.conj().T @ arrayShape
     # for theta in thetaRange:
-    
+
+def customPlot(data:list[list], range: Optional[list[float]]):
+    raise NotImplementedError
+
 def defaultRIRPlot(rirgen,rrir,mic_recovered):
     # TODO: Make this more general
     # Create a plot
@@ -40,7 +44,7 @@ def defaultRIRPlot(rirgen,rrir,mic_recovered):
         plt.title("Recovered mic 1 signal")
         plt.xlabel("Time [s]")
 
-        plt.tight_layout()    # # Create a plot
+        plt.tight_layout()    # Create a plot
 
 def plotAllRir(rrir):
     plt.figure()

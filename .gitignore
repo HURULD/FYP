@@ -3,3 +3,4 @@ __pycache__/
 *.png
 docs/external/
 .pytest_cache/
+Pipfile.lock
