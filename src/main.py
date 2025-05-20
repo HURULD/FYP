@@ -8,6 +8,7 @@ import config_handler
 import Visualisations.vis as vis
 import Evaluate as Eval
 import scipy as sp
+from Utils import Utils
 
 logger = logging.getLogger(__name__)  
 
@@ -32,23 +33,19 @@ def main():
     h_mics = rirgen.get_acoustic_transfer_functions()
     mic_0_audio = rirgen.room.room.mic_array.signals[0, :]
     mic_1_audio = rirgen.room.room.mic_array.signals[1, :]
-    rtf = Eval.compute_rtf(h_mics)
+    rtf = Utils.compute_rtf(h_mics)
     rrir = [np.fft.irfft(rtf_n) for rtf_n in rtf]
     
     # Use an adaptive filter to estimate the RTF
     import Estimators.AdaptiveFilters as AdaptiveFilters
-    lms = AdaptiveFilters.LMS(1024, 0.001)
-    lms.full_simulate(mic_0_audio, mic_1_audio)
-    mic_1_estimated, filter_error = Eval.filter_step_error(mic_0_audio, mic_1_audio, lms)
-    
+    Adaptivefilter = AdaptiveFilters.PNLMS(1024, 1)
+    Adaptivefilter.full_simulate(mic_0_audio, mic_1_audio)
+    mic_1_estimated, filter_error = Eval.filter_step_error(mic_0_audio, mic_1_audio, Adaptivefilter)
     mic_1_recovered = sp.signal.convolve(mic_0_audio,rrir[1])
-    #mse = Eval.meansquared_error_delay_corrected(mic_1_recovered, mic_1_audio)
     mse = Eval.meansquared_error_delay_corrected(mic_1_estimated, mic_1_audio)
     print(f"Mean Squared Error: {mse}")
-    
     if args.audio_out is not None:
         rirgen.save_audio(args.audio_out)
-        
     if args.print_format is not None:
         # Set up matplotlib when using PGF.
         if args.print_format == 'pgf':
@@ -66,6 +63,9 @@ def main():
             vis.plotAllRir(rrir)
         elif args.visualise == 'filter':
             vis.filter_performance(filter_error)
+        elif args.visualise == 'learning_curve':
+            print("Simulating learning curve")
+            vis.filter_performance(Eval.filter_learning_curve(mic_0_audio, mic_1_audio, Adaptivefilter, rrir[1][0:len(Adaptivefilter.w)]))
         else:
             logger.error('Invalid visualisation type. Please use either "basic" or "all"')
             raise ValueError('Invalid visualisation type. Please use either "basic" or "all"')
