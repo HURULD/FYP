@@ -3,6 +3,7 @@ import pyroomacoustics as pra
 import yaml
 import config_handler
 from scipy.io import wavfile
+from scipy import signal
 import logging
 logger = logging.getLogger(__name__)
 config = config_handler.get_config()
@@ -51,9 +52,9 @@ class RIRGenerator:
             for source in room_spec['sources']:
                 sr, audio = wavfile.read(source['file'])
                 if sr != config.audio.sample_rate:
-                    logger.warning("Source %s has mismatched sample rate, resampling",source['file'])
-                    raise NotImplementedError()
-                
+                    logger.warning("Source %s has mismatched sample rate, resampling to %dHz",source['file'],config.audio.sample_rate) 
+                    n_samples = round(len(audio) * float(config.audio.sample_rate) / sr)
+                    audio = signal.resample(audio, n_samples)
                 rir_gen.add_source(source['position'], audio, source['delay'])
         if 'microphones' in room_spec:
             rir_gen.add_microphones(room_spec['microphones'])
