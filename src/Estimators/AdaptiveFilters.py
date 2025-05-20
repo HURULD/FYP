@@ -4,7 +4,9 @@ import numpy as np
 from scipy import signal
 import pyroomacoustics as pra
 import config_handler as conf
+import logging
 
+log = logging.getLogger(__name__)
 class AdaptiveFilter(ABC):
     
     w = np.array([])
@@ -55,7 +57,7 @@ class NLMS(LMS):
         
     @property
     def norm_factor(self):
-        return np.dot(np.conjugate(self._delay_line), self._delay_line) + 1e-10 # Normalise based on signal power (+ a little bit to avoid errors)
+        return np.dot(np.conjugate(self._delay_line), self._delay_line) + 1e-12 # Normalise based on signal power (+ a little bit to avoid errors)
 
     def step_update(self, x_sample, y_sample):
         self._delay_line = np.roll(self._delay_line,1)
@@ -80,7 +82,7 @@ class PNLMS(NLMS):
         l = max(l, self._delta)
         g = np.array([max((self._p*l),np.abs(w_n)) for w_n in self.w])
         g_mean = np.mean(g)
-        sigma = np.mean(np.square(self._delay_line))
+        sigma = np.mean(np.square(self._delay_line)) + 1e-12
         self.w = np.add(self.w, (self.mu / self.tap_count)*(g/g_mean)*((error*self._delay_line)/sigma))
         return y_hat, error
 
@@ -94,7 +96,8 @@ class IPNLMS(PNLMS):
         self._delay_line[0] = x_sample
         y_hat = np.dot(np.conjugate(self.w), self._delay_line)
         error = y_sample - y_hat
-        w_norm_mean = np.sum(np.abs(self.w)) / self.tap_count
-        K = np.diag([(1-self.alpha) * w_norm_mean + (1+self.alpha) * np.abs(w_i) for w_i in self.w])
-        self.w = np.add(self.w, (self.mu * K * self._delay_line * error) / (self._delay_line.T * K * self._delay_line + self._delta))
+        w_norm = np.sum(np.abs(self.w))
+        k_terms = [(1-self.alpha) / (2*self.tap_count) + (1+self.alpha)*((np.abs(w_i))/2*w_norm + 1e-12) for w_i in self.w]
+        K = np.diag(k_terms)
+        self.w = np.add(self.w, (self.mu * K @ self._delay_line * error) / (self._delay_line.T @ K @ self._delay_line + self._delta))
         return y_hat, error

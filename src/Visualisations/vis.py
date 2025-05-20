@@ -5,7 +5,7 @@ from scipy.fft import fft, fftfreq, fftshift
 import os
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
 import pygame
-from typing import Optional
+from typing import Optional, Literal
 
 def BeamPatternPolar(arrayShape:np.array, arrayWeights:np.array, thetaRange = np.linspace(0, 2*np.pi, 1000)):
     raise NotImplementedError
@@ -127,24 +127,31 @@ def filter_performance(filter_error):
     plt.xlabel("Sample")
     plt.ylabel("MSE")
     
-def fft_default_plot(signal,sample_rate):
+def fft_default_plot(signal,sample_rate, scale:Literal['log','linear']='log'):
     
     N = len(signal) # N samples
     T = 1 / sample_rate # Sample period
     
     yf = fft(signal)
     xf = fftfreq(N, T)
-    xf = fftshift(xf)
     yplot = fftshift(yf)
+    
+    magnitude = np.abs(yplot[:N//2]) * 2/N
+    magnitude_db = 20 * np.log10(magnitude + 1e-12) # Avoid log(0)
     
     plt.figure()
     plt.subplot(1,2,1)
-    plt.plot(xf, 1.0/N * np.abs(yplot))
+    if scale == 'linear':
+        plt.plot(xf[:N//2], magnitude)
+        plt.ylabel('Magnitude')
+    elif scale == 'log':
+        plt.plot(xf[:N//2], magnitude_db)
+        plt.ylabel('Magnitude (dB)')
     plt.xlabel('Frequency (Hz)')
-    plt.ylabel('Magnitude')
     plt.grid()
     
     plt.subplot(1,2,2)
+    xf = fftshift(xf)
     plt.plot(xf, 1.0/N * np.unwrap(np.angle(yplot)))
     plt.xlabel('Frequency (Hz)')
     plt.ylabel('Phase')
