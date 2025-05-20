@@ -3,26 +3,6 @@ import Estimators.AdaptiveFilters as AdaptiveFilters
 import scipy.signal
 import config_handler
 
-def compute_rtf(mics_rir:np.ndarray, reference=0, n_fft=None):
-    # Computes the RTF for all microphones from a given reference microphone
-    # pick an FFT size (power of two) at least as large as the longer RIR
-    if n_fft is None:
-        L = max([len(mic) for mic in mics_rir])
-        n_fft = 1
-        while n_fft < L:
-            n_fft *= 2
-    
-    # Compute the frequency-domain representation of each mic's RIR
-    mics_h = [np.fft.rfft(mic, n=n_fft) for mic in mics_rir]
-    
-    # Avoid numerical issues
-    EPS = 1e-12
-    mics_h_safe = [np.where(np.abs(mic_h) < EPS, EPS, mic_h) for mic_h in mics_h]
-    
-    # Ratio
-    RTF = [np.divide(mic_h, mics_h_safe[reference]) for mic_h in mics_h_safe]
-    return RTF
-
 def meansquared_error(x, y):
     # Handle case where x and y are not the same length
     if len(x) != len(y):
@@ -49,3 +29,10 @@ def filter_step_error(x, y, filter:AdaptiveFilters.AdaptiveFilter):
     for i in range(len(x)):
         y_hat[i], error[i] = filter.step_update(x[i], y[i])
     return y_hat, error
+
+def filter_learning_curve(x,y,filter:AdaptiveFilters.AdaptiveFilter, reference_taps:np.ndarray):
+    tap_mse = np.zeros(len(x))
+    for i in range(len(x)):
+        filter.step_update(x[i], y[i])
+        tap_mse[i] = meansquared_error(filter.w, reference_taps)
+    return tap_mse
