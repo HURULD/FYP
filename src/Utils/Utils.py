@@ -1,5 +1,6 @@
 from typing import Literal, Optional
 import numpy as np
+from numpy.lib.stride_tricks import sliding_window_view
 
 def GenSignal(sig_type:Literal['noise','sine','cosine','impulse'],len:float,sample_rate:int,frequency:Optional[int]=0,format:Literal['real','complex']='complex'):
     output=np.zeros(round(len*sample_rate))
@@ -13,12 +14,7 @@ def GenSignal(sig_type:Literal['noise','sine','cosine','impulse'],len:float,samp
         raise NotImplementedError()
     
 def MovingAverage(x:np.ndarray, window_size=10):
-    out = np.array([])
-    bins = np.array_split(x, np.floor(len(x)/window_size))
-    bins = np.apply_over_axes(np.mean,np.array(bins),1)
-    for bin in bins:
-        np.append(out, bin)
-    return out
+    return sliding_window_view(x, window_shape=window_size).mean(axis=-1)
 
 def compute_rtf(mics_rir:np.ndarray, reference=0, n_fft=None):
     # Computes the RTF for all microphones from a given reference microphone

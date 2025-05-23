@@ -90,6 +90,7 @@ class IPNLMS(PNLMS):
     def __init__(self, tap_count, mu, delta=0.01, p=0.01, alpha = -0.5):
         self.alpha = alpha
         super().__init__(tap_count=tap_count,mu=mu,delta=delta,p=p)
+        self._delta = 1-self.alpha / (2*self.tap_count) *self._delta
     
     def step_update(self, x_sample, y_sample):
         self._delay_line = np.roll(self._delay_line, 1)
@@ -97,7 +98,7 @@ class IPNLMS(PNLMS):
         y_hat = np.dot(np.conjugate(self.w), self._delay_line)
         error = y_sample - y_hat
         w_norm = np.sum(np.abs(self.w))
-        k_terms = [(1-self.alpha) / (2*self.tap_count) + (1+self.alpha)*((np.abs(w_i))/2*w_norm + 1e-12) for w_i in self.w]
-        K = np.diag(k_terms)
-        self.w = np.add(self.w, (self.mu * K @ self._delay_line * error) / (self._delay_line.T @ K @ self._delay_line + self._delta))
+        k_terms = [((1-self.alpha) / (2*self.tap_count)) + (1+self.alpha)*((np.abs(w_i))/(2*w_norm + 1e-12)) for w_i in self.w]
+        K = np.array(k_terms)
+        self.w = np.add(self.w, (self.mu * K * self._delay_line * error) / (self._delay_line * K * self._delay_line + self._delta))
         return y_hat, error

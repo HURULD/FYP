@@ -87,3 +87,17 @@ class TestAdaptiveFilters:
         #     plt.plot(np.arange(16000), [reference_filter_taps[i]]*16000, c=plt.get_cmap('tab10').colors[i])
         #     plt.plot(tap_mse[i], linestyle='dashed')
         # plt.show()
+    def test_filter_learning_curve(self, filter_class: AdaptiveFilters.AdaptiveFilter, mu):
+        log.info("Testing %s learning curve, error should generally decrease", filter_class.__name__)
+        input_noise = Utils.GenSignal('noise',4,2000)
+        # Reference filter
+        reference_filter_taps = [(random.random() * -2) + 1 for _ in range(1024)]
+        reference_signal = signal.lfilter(reference_filter_taps, 1, input_noise)
+        test_filter:AdaptiveFilters.AdaptiveFilter = filter_class(len(reference_filter_taps), mu)
+        tap_mse = np.zeros(len(input_noise))
+        for i, (x,y) in enumerate(zip(input_noise, reference_signal)):
+            y_h, error = test_filter.step_update(x, y)
+            tap_mse[i] = Evaluate.meansquared_error(reference_filter_taps, test_filter.w)
+        plt.plot(Utils.MovingAverage(tap_mse))
+        plt.show()
+        

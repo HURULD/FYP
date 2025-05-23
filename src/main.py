@@ -38,7 +38,7 @@ def main():
     
     # Use an adaptive filter to estimate the RTF
     import Estimators.AdaptiveFilters as AdaptiveFilters
-    Adaptivefilter = AdaptiveFilters.PNLMS(1024, 1)
+    Adaptivefilter = AdaptiveFilters.IPNLMS(1024, 1)
     Adaptivefilter.full_simulate(mic_0_audio, mic_1_audio)
     mic_1_estimated, filter_error = Eval.filter_step_error(mic_0_audio, mic_1_audio, Adaptivefilter)
     mic_1_recovered = sp.signal.convolve(mic_0_audio,rrir[1])
