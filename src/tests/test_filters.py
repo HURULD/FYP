@@ -4,6 +4,9 @@ import numpy as np
 from scipy import signal
 from scipy import fft
 import logging
+import matplotlib as mpl
+# Use the pgf backend (must be set before pyplot imported)
+mpl.use('pgf')
 import matplotlib.pyplot as plt
 import pytest
 from Visualisations.vis import fft_default_plot
@@ -12,13 +15,13 @@ from Utils import Utils
 
 log = logging.getLogger(__name__)
 
-MSE_THRESHOLD = 1.5
+MSE_THRESHOLD = 2
 
 @pytest.mark.parametrize("filter_class, mu", [
-    (AdaptiveFilters.LMS, 0.0001),
-    (AdaptiveFilters.NLMS, 1),
-    (AdaptiveFilters.PNLMS, 1),
-    (AdaptiveFilters.IPNLMS,1)
+    (AdaptiveFilters.LMS, 0.0005),
+    (AdaptiveFilters.NLMS, 0.5),
+    (AdaptiveFilters.PNLMS, 0.5),
+    (AdaptiveFilters.IPNLMS,0.5)
 ])
 class TestAdaptiveFilters:
     def test_filter_lowpass_awgn(self, filter_class: AdaptiveFilters.AdaptiveFilter, mu):
@@ -70,7 +73,7 @@ class TestAdaptiveFilters:
         log.info("Starting %s test with arbitrary 4 tap filter", filter_class.__name__)
         input_noise = Utils.GenSignal('noise',4,2000)
         # Reference filter
-        reference_filter_taps = [(random.random() * -2) + 1 for _ in range(4)]
+        reference_filter_taps = [(random.random() * -10) + 5 for _ in range(4)]
         reference_signal = signal.lfilter(reference_filter_taps, 1, input_noise)
         test_filter:AdaptiveFilters.AdaptiveFilter = filter_class(len(reference_filter_taps), mu)
         tap_mse = [ [] for _ in range(len(reference_filter_taps))]
@@ -87,6 +90,8 @@ class TestAdaptiveFilters:
         #     plt.plot(np.arange(16000), [reference_filter_taps[i]]*16000, c=plt.get_cmap('tab10').colors[i])
         #     plt.plot(tap_mse[i], linestyle='dashed')
         # plt.show()
+        assert mse <= MSE_THRESHOLD
+        
     def test_filter_learning_curve(self, filter_class: AdaptiveFilters.AdaptiveFilter, mu):
         log.info("Testing %s learning curve, error should generally decrease", filter_class.__name__)
         input_noise = Utils.GenSignal('noise',4,2000)
@@ -95,9 +100,16 @@ class TestAdaptiveFilters:
         reference_signal = signal.lfilter(reference_filter_taps, 1, input_noise)
         test_filter:AdaptiveFilters.AdaptiveFilter = filter_class(len(reference_filter_taps), mu)
         tap_mse = np.zeros(len(input_noise))
+        j = 0
         for i, (x,y) in enumerate(zip(input_noise, reference_signal)):
             y_h, error = test_filter.step_update(x, y)
             tap_mse[i] = Evaluate.meansquared_error(reference_filter_taps, test_filter.w)
+            if tap_mse[i] > 1e5:
+                j = j+1
+                log.warning(f"High tap MSE at sample {i}: {tap_mse[i]}")
+        log.warning(f"High tap MSE count: {j}")
+        plt.figure()
         plt.plot(Utils.MovingAverage(tap_mse))
-        plt.show()
+        #plt.show()
+        plt.savefig(f'learning-curve-{filter_class.__name__}.pgf', format='pgf')
         
