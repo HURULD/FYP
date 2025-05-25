@@ -80,7 +80,7 @@ class PNLMS(NLMS):
         error = y_sample - y_hat
         l = np.amax(np.abs(self.w))
         l = max(l, self._delta)
-        g = np.array([max((self._p*l),np.abs(w_n)) for w_n in self.w])
+        g = (lambda w_i : (np.maximum(self._p * l, np.abs(w_i))))(self.w)
         g_mean = np.mean(g)
         sigma = np.mean(np.square(self._delay_line)) + 1e-12
         self.w = np.add(self.w, (self.mu / self.tap_count)*(g/g_mean)*((error*self._delay_line)/sigma))
@@ -98,7 +98,6 @@ class IPNLMS(PNLMS):
         y_hat = np.dot(np.conjugate(self.w), self._delay_line)
         error = y_sample - y_hat
         w_norm = np.sum(np.abs(self.w))
-        k_terms = [((1-self.alpha) / (2*self.tap_count)) + (1+self.alpha)*((np.abs(w_i))/(2*w_norm + 1e-12)) for w_i in self.w]
-        K = np.array(k_terms)
-        self.w = np.add(self.w, (self.mu * K * self._delay_line * error) / (self._delay_line * K * self._delay_line + self._delta))
+        k = (lambda w_i : ((1-self.alpha) / (2*self.tap_count)) + (1+self.alpha)*((np.abs(w_i))/(2*w_norm + 1e-12))) (self.w)
+        self.w = np.add(self.w, (self.mu * k * self._delay_line * error) / (self._delay_line * k * self._delay_line + self._delta))
         return y_hat, error
