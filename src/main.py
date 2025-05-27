@@ -10,7 +10,7 @@ import Evaluate as Eval
 import scipy as sp
 from Utils import Utils
 
-logger = logging.getLogger(__name__)  
+logger = logging.getLogger(__name__)
 
 def main():
     parser = argparse.ArgumentParser(description='RTF Estimation simulation frontend')
@@ -38,14 +38,19 @@ def main():
     
     # Use an adaptive filter to estimate the RTF
     import Estimators.AdaptiveFilters as AdaptiveFilters
-    Adaptivefilter = AdaptiveFilters.IPNLMS(1024, 1)
+    Adaptivefilter = AdaptiveFilters.IPNLMS(1024, 0.01)
     Adaptivefilter.full_simulate(mic_0_audio, mic_1_audio)
     mic_1_estimated, filter_error = Eval.filter_step_error(mic_0_audio, mic_1_audio, Adaptivefilter)
     mic_1_recovered = sp.signal.convolve(mic_0_audio,rrir[1])
     mse = Eval.meansquared_error_delay_corrected(mic_1_estimated, mic_1_audio)
     print(f"Mean Squared Error: {mse}")
+    plt.plot(rrir[1])
+    plt.plot(Adaptivefilter.w, label='Adaptive Filter IR')
+    plt.show()
+    
     if args.audio_out is not None:
         rirgen.save_audio(args.audio_out)
+
     if args.print_format is not None:
         # Set up matplotlib when using PGF.
         if args.print_format == 'pgf':
@@ -70,6 +75,7 @@ def main():
             logger.error('Invalid visualisation type. Please use either "basic" or "all"')
             raise ValueError('Invalid visualisation type. Please use either "basic" or "all"')
 
+
         if args.print_format == 'show':
             plt.show()
         elif args.print_format == 'png':
@@ -79,6 +85,7 @@ def main():
         else:
             logger.error('Invalid print format. Please use either "show", "png" or "pgf"')
             raise ValueError('Invalid print format. Please use either "show", "png" or "pgf"')
+        
     if args.visualise == 'pygame':
         vis.draw_room_from_spec(room_spec)
 
