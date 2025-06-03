@@ -22,6 +22,7 @@ def main():
     args = parser.parse_args()
     # Load config
     config_handler.load_config(args.config_file)
+    cfg = config_handler.get_config()
     import RIRGen.RIRGen as RIRGen
     
     # Load room specifications
@@ -38,7 +39,7 @@ def main():
     
     # Use an adaptive filter to estimate the RTF
     import Estimators.AdaptiveFilters as AdaptiveFilters
-    Adaptivefilter = AdaptiveFilters.IPNLMS(1024, 0.01)
+    Adaptivefilter = AdaptiveFilters.IPNLMS(1024, 0.1)
     Adaptivefilter.full_simulate(mic_0_audio, mic_1_audio)
     mic_1_estimated, filter_error = Eval.filter_step_error(mic_0_audio, mic_1_audio, Adaptivefilter)
     mic_1_recovered = sp.signal.convolve(mic_0_audio,rrir[1])
@@ -70,7 +71,7 @@ def main():
             vis.filter_performance(filter_error)
         elif args.visualise == 'learning_curve':
             print("Simulating learning curve")
-            vis.filter_performance(Eval.filter_learning_curve(mic_0_audio, mic_1_audio, Adaptivefilter, rrir[1][0:len(Adaptivefilter.w)]))
+            vis.filter_performance(Eval.filter_learning_curve(mic_0_audio, mic_1_audio, Adaptivefilter, rrir[1][0:len(Adaptivefilter.w)]),cfg.audio.sample_rate)
         else:
             logger.error('Invalid visualisation type. Please use either "basic" or "all"')
             raise ValueError('Invalid visualisation type. Please use either "basic" or "all"')

@@ -6,7 +6,8 @@ room:
 sources:
   - position:
       [2.5,3.73,1.76]
-    file: ../audio/test1.wav
+    noise: 
+      length: 2
     delay: 1.3
 
 microphones:

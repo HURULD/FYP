@@ -119,12 +119,16 @@ def draw_room_from_spec(room_spec:dict):
             render()
     pygame.quit()
 
-def filter_performance(filter_error):
+def filter_performance(filter_error, sample_rate:Optional[int]=None):
     print(filter_error[~np.isnan(filter_error)])
     plt.figure()
-    plt.plot(filter_error)
+    if sample_rate is not None:
+        plt.plot(np.arange(len(filter_error)) / sample_rate, filter_error)
+        plt.xlabel("Time (s)")
+    else:
+        plt.plot(filter_error)
+        plt.xlabel("Sample Index")
     plt.title("Filter Performance")
-    plt.xlabel("Sample")
     plt.ylabel("MSE")
     
 def fft_default_plot(signal,sample_rate, scale:Literal['log','linear']='log'):

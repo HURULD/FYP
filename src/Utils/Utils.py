@@ -2,7 +2,23 @@ from typing import Literal, Optional
 import numpy as np
 from numpy.lib.stride_tricks import sliding_window_view
 
-def GenSignal(sig_type:Literal['noise','sine','cosine','impulse'],len:float,sample_rate:int,frequency:Optional[int]=0,format:Literal['real','complex']='complex'):
+def GenSignal(sig_type:Literal['noise','sine','cosine','impulse'],len:float,sample_rate:int,frequency:Optional[int]=0,format:Literal['real','complex']='real'):
+    """Generate a signal of single type with given length and sample rate.
+
+    Args:
+        sig_type (Literal[&#39;noise&#39;,&#39;sine&#39;,&#39;cosine&#39;,&#39;impulse&#39;]): _type_ of signal to generate.
+        len (float): _length_ of the signal in seconds.
+        sample_rate (int): _sample rate_ in Hz.
+        frequency (Optional[int], optional): _frequency_ of sinusoid signal. Defaults to 0.
+        format (Literal[&#39;real&#39;,&#39;complex&#39;], optional): Number format of data. Defaults to 'real'.
+
+    Raises:
+        NotImplementedError: _description_
+
+    Returns:
+        NDArray: Array of generated signal data.
+    """
+    
     output=np.zeros(round(len*sample_rate))
     if sig_type == 'noise':
         if format == 'real' or format == 'complex':

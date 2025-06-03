@@ -7,6 +7,12 @@ import logging
 import matplotlib as mpl
 # Use the pgf backend (must be set before pyplot imported)
 mpl.use('pgf')
+mpl.rcParams.update({
+                "pgf.texsystem": "pdflatex",
+                'font.family': 'serif',
+                'text.usetex': True,
+                'pgf.rcfonts': False,
+            })
 import matplotlib.pyplot as plt
 import pytest
 from Visualisations.vis import fft_default_plot
@@ -110,6 +116,7 @@ class TestAdaptiveFilters:
         log.warning(f"High tap MSE count: {j}")
         plt.figure()
         plt.plot(Utils.MovingAverage(tap_mse))
+        plt.plot
         #plt.show()
         plt.savefig(f'learning-curve-{filter_class.__name__}.pgf', format='pgf')
         
