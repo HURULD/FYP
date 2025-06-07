@@ -163,3 +163,6 @@ def fft_default_plot(signal,sample_rate, scale:Literal['log','linear']='log'):
     
     plt.tight_layout() 
     plt.show()
+    
+def experiment_plot():
+    None

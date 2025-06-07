@@ -30,7 +30,7 @@ def filter_step_error(x, y, filter:AdaptiveFilters.AdaptiveFilter):
         y_hat[i], error[i] = filter.step_update(x[i], y[i])
     return y_hat, error
 
-def filter_learning_curve(x,y,filter:AdaptiveFilters.AdaptiveFilter, reference_taps:np.ndarray):
+def filter_learning_curve_mse(x,y,filter:AdaptiveFilters.AdaptiveFilter, reference_taps:np.ndarray):
     tap_mse = np.zeros(len(x))
     for i in range(len(x)):
         filter.step_update(x[i], y[i])
@@ -44,8 +44,8 @@ def normalised_projection_misalignment(h, h_hat):
     """Normalized Projection Misalignment 
 
     Args:
-        h (np.NDArray): true impulse responses [L x M]
-        h_hat (np.NDArray): estimated impulse responses [L x M]
+        h (np.NDArray): true impulse responses [M x L]
+        h_hat (np.NDArray): estimated impulse responses [M x L]
     Returns:
         npm_val : Normalize Projection Misalignment
         
@@ -71,12 +71,15 @@ def normalised_projection_misalignment(h, h_hat):
     Copyright (C) Imperial College London 2009-2010
     Version: $Id: npm.m 425 2011-08-12 09:15:01Z mrt102
     """
-    if np.shape(h_hat)[1] <= np.shape(h)[1]:
-        h_v = np.reshape(h[0:np.shape(h_hat)[1]-1],(-1,1),'F')
+    if np.shape(h_hat)[1]-np.shape(h)[1] > 0:
+        h = np.concat((h, np.zeros((np.shape(h)[0], np.shape(h_hat)[1]-np.shape(h)[1]))), axis=1)
+    elif np.shape(h_hat)[1]-np.shape(h)[1] < 0:
+        h_hat = np.concat((h_hat, np.zeros((np.shape(h_hat)[0], np.shape(h)[1]-np.shape(h_hat)[1]))), axis=1)
+    
+    if np.shape(h_hat)[0] <= np.shape(h)[0]:
+        h_v = np.reshape(h[0:np.shape(h_hat)[0]],(-1,1),'F')
         h_hat_v = np.reshape(h_hat,(-1,1),'F')
     else:
-        if np.shape(h_hat)[1]-np.shape(h)[1] > 0:
-            np.concat((h, np.zeros((np.shape(h_hat)[1]-np.shape(h)[1], np.shape(h)[0]))), axis=0)
         h_v = np.reshape(h,(-1,1),'F')
         h_hat_v = np.reshape(h_hat,(-1,1),'F')
 
@@ -84,3 +87,12 @@ def normalised_projection_misalignment(h, h_hat):
     npm_val = np.linalg.norm(epsilon)/np.linalg.norm(h_v)
     
     return npm_val
+
+
+
+def filter_learning_curve_npm(x,y,filter:AdaptiveFilters.AdaptiveFilter, reference_taps:np.ndarray):
+    tap_npm = np.zeros(len(x))
+    for i in range(len(x)):
+        filter.step_update(x[i], y[i])
+        tap_npm[i] = npm(filter.w, reference_taps)
+    return tap_npm

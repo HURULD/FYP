@@ -17,8 +17,8 @@ class AdaptiveFilter(ABC):
         pass
 
     @abstractmethod
-    def apply_filter(self, x:np.ndarray) -> np.ndarray:
-        """Apply the trained filter to an input signal."""
+    def full_simulate(self, x, y)-> tuple[np.ndarray, np.ndarray]:
+        """Fully simulate the filter"""
         pass
 
     def apply_filter(self, x):
