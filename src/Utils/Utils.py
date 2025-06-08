@@ -1,6 +1,9 @@
 from typing import Literal, Optional
 import numpy as np
 from numpy.lib.stride_tricks import sliding_window_view
+from scipy import signal
+from scipy import interpolate
+import config_handler as config_handler
 
 def GenSignal(sig_type:Literal['noise','sine','cosine','impulse'],len:float,sample_rate:int,frequency:Optional[int]=0,format:Literal['real','complex']='real'):
     """Generate a signal of single type with given length and sample rate.
@@ -77,7 +80,7 @@ def compute_multichannel_stft(signals, frame_len=512, hop_size=256, fft_len=512)
     M, L = signals.shape
     stfts = []
     for m in range(M):
-        _, _, Zxx = stft(signals[m], nperseg=frame_len, noverlap=frame_len-hop_size, nfft=fft_len)
+        _, _, Zxx = signal.stft(signals[m], fs=config_handler.get_config().audio.sample_rate, nperseg=frame_len, noverlap=frame_len-hop_size, nfft=fft_len)
         stfts.append(Zxx)
     return np.stack(stfts, axis=0)  # shape (M, F, T)
 
@@ -95,3 +98,20 @@ def compute_cpsd_matrices(stfts):
             X = stfts[:, f, t].reshape(M, 1)  # (M, 1)
             cpsd[:, :, f, t] = X @ X.conj().T  # Outer product
     return cpsd
+
+def interpolate_stft_to_fft(stfts, fft_len):
+    """
+    Interpolates the stft to an fft, averaging over the time windows
+    Args:
+        stfts (np.ndarray): STFT data with shape (M, F, T)
+    Returns:
+        np.ndarray: Interpolated STFT data with shape (M, F)
+    """
+    # Average over time windows
+    stft_average = np.mean(stfts, axis=2)  # Average over time frames (T)
+    # Interpolate each microphone's STFT to the desired FFT length
+    fft_interp = np.zeros((stfts.shape[0], fft_len))
+    for m in range(stfts.shape[0]):
+        fft_interp[m] = np.interp(np.arange(fft_len), np.arange(stft_average.shape[1]), np.abs(stft_average[m]))
+    
+    return fft_interp

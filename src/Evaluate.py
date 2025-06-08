@@ -83,7 +83,7 @@ def normalised_projection_misalignment(h, h_hat):
         h_v = np.reshape(h,(-1,1),'F')
         h_hat_v = np.reshape(h_hat,(-1,1),'F')
 
-    epsilon = h_v-np.squeeze((h_v.T@h_hat_v)/(h_hat_v.T@h_hat_v))*h_hat_v
+    epsilon = h_v-np.squeeze((h_v.T@h_hat_v)/((h_hat_v.T@h_hat_v))*h_hat_v) + 1e-10
     npm_val = np.linalg.norm(epsilon)/np.linalg.norm(h_v)
     
     return npm_val

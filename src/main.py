@@ -9,7 +9,7 @@ import Visualisations.vis as vis
 import Evaluate as Eval
 import scipy as sp
 from Utils import Utils
-from Estimators import RTF_Estimator, AdaptiveFilters
+from Estimators import RTF_Estimator, AdaptiveFilters, Covariance
 
 logger = logging.getLogger(__name__)
 
@@ -33,15 +33,22 @@ def main():
     room_spec = yaml.safe_load(open(args.room_file))
     rirgen = RIRGen.RIRGenerator.from_room_spec(room_spec)
     
-    # Compute the relative transfer function from mic 0 to mic 1
+    # Compute the relative transfer function (mic 0 is default reference)
     h_mics = rirgen.get_acoustic_transfer_functions()
     rtf = Utils.compute_rtf(h_mics)
     rrir = [np.fft.irfft(rtf_n) for rtf_n in rtf]
     
+    mic_0_audio = rirgen.room.room.mic_array.signals[0, :]
+    mic_1_audio = rirgen.room.room.mic_array.signals[1, :]
+    
+    mic_1_recovered = sp.signal.convolve(mic_0_audio, rrir[1])
+    mse = Eval.meansquared_error_delay_corrected(mic_1_recovered, mic_1_audio)
+    print(f"Mean Squared Error: {mse}")
+    
     # Use an adaptive filter to estimate the RTF
     # import Estimators.AdaptiveFilters as AdaptiveFilters
     # Adaptivefilter = AdaptiveFilters.IPNLMS(1024, 0.1)
-    # Adaptivefilter.full_simulate(mic_0_audio, mic_1_audio)
+    # Adaptivefilter.full_simulate(mic_0_audio, mic_1_audio)  
     # mic_1_estimated, filter_error = Eval.filter_step_error(mic_0_audio, mic_1_audio, Adaptivefilter)
     # mic_1_recovered = sp.signal.convolve(mic_0_audio,rrir[1])
     # mse = Eval.meansquared_error_delay_corrected(mic_1_estimated, mic_1_audio)
@@ -70,9 +77,7 @@ def main():
     
     
 
-    mic_0_audio = rirgen.room.room.mic_array.signals[0, :]
-    mic_1_audio = rirgen.room.room.mic_array.signals[1, :]
-    mic_1_recovered = adaptive_filter.apply_filter(mic_0_audio)
+    
     
     if args.experiment is not None:
         if args.output is None:
@@ -80,22 +85,54 @@ def main():
             raise ValueError('Output directory must be specified for experiments.')
         if args.experiment == "all":
             raise NotImplementedError("Experiment 'all' is not implemented yet.")
-        elif args.experiment == "rtf_accuracy":
-            print("Running RTF accuracy experiment")
+        elif args.experiment == "rtf_accuracy_filter":
+            print(f"Running RTF accuracy experiment with adaptive filter {args.filter[0]}")
             # Copy room config to output directory
             Utils.copy_room_spec_to_output(args.room_file, args.output)
             rtf_estimator = RTF_Estimator.RTFEstimator(adaptive_filter)
             h_hat = rtf_estimator.estimate_rtf(rirgen.room.room.mic_array.signals, reference_idx=0)
+            mic_1_recovered = adaptive_filter.apply_filter(mic_0_audio)
+            npm = Eval.npm(rtf, h_hat)
+            print(f"Normalized Projection Misalignment: {npm}")
+            mses = np.array([Eval.meansquared_error_delay_corrected(rrir[i], h_hat[i]) for i in range(h_hat.shape[0])])
+            print(f"Mean Squared Errors: {np.abs(mses)}")
+            # Save the estimated RTF
+            np.save(f"{args.output}/estimated_rtf.npy", h_hat)
+            print("Estimated RTF saved to", f"{args.output}/estimated_rtf_filter_{args.filter[0]}.npy")
+            
+        elif args.experiment == "rtf_accuracy_covariance_whitening_identity":
+            print("Running RTF accuracy experiment with covariance whitening")
+            # Copy room config to output directory
+            Utils.copy_room_spec_to_output(args.room_file, args.output)
+            noisy_cpsd = Utils.compute_cpsd_matrices(Utils.compute_multichannel_stft(rirgen.room.room.mic_array.signals))
+            print(noisy_cpsd.shape)
+            # Identity matrix of same shape, with same frequency bins and time frames (all ident)
+            noise_cpsd = np.zeros_like(noisy_cpsd)
+            for i in range(noisy_cpsd.shape[2]):
+                for j in range(noisy_cpsd.shape[3]):
+                    noise_cpsd[:,:, i, j] = np.identity(noisy_cpsd.shape[0])
+                    
+            # Covariance whitening step
+            h_hat = Covariance.estimate_rtf_covariance_whitening(noise_cpsd, noisy_cpsd)
+            # Interpolate to the same shape as rtf
+            h_hat = Utils.interpolate_stft_to_fft(h_hat, rtf.shape[1])
+            mic_1_recovered = sp.signal.convolve(rirgen.room.room.mic_array.signals[0, :], np.fft.irfft(h_hat[1]))
+            print(f"Estimated RTF shape: {h_hat.shape}")
+            print(f"RTF shape: {rtf.shape}")
+            mses = np.array([Eval.meansquared_error_delay_corrected(rrir[i], h_hat[i]) for i in range(h_hat.shape[0])])
+            print(f"Mean Squared Errors: {np.abs(mses)}")
             npm = Eval.npm(rtf, h_hat)
             print(f"Normalized Projection Misalignment: {npm}")
             # Save the estimated RTF
             np.save(f"{args.output}/estimated_rtf.npy", h_hat)
-            print("Estimated RTF saved to", f"{args.output}/estimated_rtf.npy")
+            print("Estimated RTF saved to", f"{args.output}/estimated_rtf_covariance_whitening.npy")
+            
         else:
             logger.error(f"Experiment {args.experiment} does not exist.")
             raise NotImplementedError(f"Experiment {args.experiment} does not exist.")
             
 
+    
 
     if args.audio_out is not None:
         rirgen.save_audio(args.audio_out)
