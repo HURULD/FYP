@@ -22,8 +22,7 @@ def estimate_rtf_covariance_whitening(noise_cpsd, noisy_cpsd, use_cholesky=True)
     """
 
     num_mics, _, num_freqs, num_time_frames = noise_cpsd.shape
-    # self.InitSelectionVector(num_mics)
-
+    
     rtfs = np.ones((num_mics, num_freqs, num_time_frames), dtype=np.complex128)
     time_frames = range(num_time_frames)
     if use_cholesky:
@@ -135,3 +134,36 @@ def sort_eigenvectors_get_major(eigva, eigve, num_to_keep=1, squeeze=True):
         return np.squeeze(eigva[-num_to_keep:]), np.squeeze(eigve[:, -num_to_keep:])
     else:
         return eigva[-num_to_keep:], eigve[:, -num_to_keep:]
+    
+
+def covariance_subtraction_first_column(phi_xx_tt, reference_mic=0):
+    return np.squeeze(phi_xx_tt[:, reference_mic] / (eps + phi_xx_tt[reference_mic, reference_mic]))
+
+# for single source, RTF corresponds to eigenvector corresponding to largest eigenvalue
+def covariance_subtraction_eigve(phi_xx_tt):
+    eigva, eigve = scipy.linalg.eigh(phi_xx_tt, check_finite=False)
+    _, rtf = sort_eigenvectors_get_major(eigva, eigve)
+    rtf = normalize_to_1(rtf)
+    return rtf
+
+def estimate_rtf_covariance_subtraction(clean_speech_cpsd, use_first_column=True) -> np.array:
+
+    print("estimate_rtf_covariance_subtraction...")
+
+    num_mics, _, num_freqs, num_time_frames = clean_speech_cpsd.shape
+    rtfs = np.ones((num_mics, num_freqs, num_time_frames), dtype=complex)
+    for tt in range(num_time_frames):
+        for kk in range(num_freqs):
+            rtfs[..., kk, tt] = covariance_subtraction_internal(clean_speech_cpsd[..., kk, tt],
+                                                                        use_first_column)
+
+    return rtfs
+
+def covariance_subtraction_internal(clean_speech_cpsd, use_first_column=False) -> np.array:
+    if not np.alltrue(np.diag(clean_speech_cpsd) >= 0):
+        return np.ones((clean_speech_cpsd.shape[0],), dtype=complex) * np.nan
+    else:
+        if use_first_column:
+            return covariance_subtraction_first_column(clean_speech_cpsd)
+        else:
+            return covariance_subtraction_eigve(clean_speech_cpsd)

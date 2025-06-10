@@ -16,8 +16,6 @@ class RTFEstimator():
         n_mics, n_samples = mic_signal.shape
         rtf_estimate = np.zeros((n_mics, self.filter.tap_count))
         for i in range(n_mics):
-            if i == reference_idx:
-                continue
             # Apply the adaptive filter to estimate the RRIR
             self.filter.w = np.zeros(self.filter.tap_count)
             _, _ = self.filter.full_simulate(mic_signal[i], mic_signal[reference_idx])

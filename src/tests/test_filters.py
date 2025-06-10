@@ -4,15 +4,18 @@ import numpy as np
 from scipy import signal
 from scipy import fft
 import logging
-import matplotlib as mpl
+import matplotlib
 # Use the pgf backend (must be set before pyplot imported)
-mpl.use('pgf')
-mpl.rcParams.update({
-                "pgf.texsystem": "pdflatex",
-                'font.family': 'serif',
-                'text.usetex': True,
-                'pgf.rcfonts': False,
-            })
+matplotlib.use("pgf")
+matplotlib.rcParams.update({
+    "pgf.texsystem": "pdflatex",  # or "lualatex" or "xelatex" if you're using those
+    "text.usetex": True,
+    "font.family": "serif",       # Match your document font
+    "axes.labelsize": 10,
+    "legend.fontsize": 9,
+    "xtick.labelsize": 8,
+    "ytick.labelsize": 8,
+})
 import matplotlib.pyplot as plt
 import pytest
 from Visualisations.vis import fft_default_plot
@@ -114,9 +117,24 @@ class TestAdaptiveFilters:
                 j = j+1
                 log.warning(f"High tap MSE at sample {i}: {tap_mse[i]}")
         log.warning(f"High tap MSE count: {j}")
-        plt.figure()
-        plt.plot(Utils.MovingAverage(tap_mse))
-        plt.plot
-        #plt.show()
+        fig, ax = plt.subplots(figsize=(2.8, 2.3))
+        ax.plot(Utils.MovingAverage(tap_mse))
+        ax.grid(True, which='major', linestyle='--', linewidth=0.5, alpha=0.7)
+        ax.set_xlim(left=0, right=len(input_noise))
+        ax.set_ylim(bottom=0, top=0.35)
+        ax.set_xlabel("Sample")
+        ax.set_ylabel("MSE")
+        plt.tight_layout()
         plt.savefig(f'learning-curve-{filter_class.__name__}.pgf', format='pgf')
         
+        
+class TestCovariance:
+    
+    def test_covariance_whitening(self):
+        log.info("Testing covariance whitening")
+        # Generate a random noise signal
+        noisy_cpsd = np.random.rand(10, 10, 5, 5)
+        raise NotImplementedError("Covariance whitening test not implemented yet")
+    
+    def test_covariance_subtraction(self):
+        raise NotImplementedError("Covariance subtraction test not implemented yet")
