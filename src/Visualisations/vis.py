@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+import matplotlib.patches as patches
 import numpy as np
 import config_handler as conf
 from scipy.fft import fft, fftfreq, fftshift
@@ -77,7 +78,7 @@ def plotAllRir(rrir):
         
     plt.tight_layout()
     
-def draw_room_from_spec(room_spec:dict):
+def draw_room_from_spec_pygame(room_spec:dict):
     dimensions = room_spec['room']['dimensions']
     sources = room_spec.get('sources', [])
     microphones = room_spec.get('microphones', [])
@@ -118,8 +119,33 @@ def draw_room_from_spec(room_spec:dict):
                 running = False
             render()
     pygame.quit()
+    
+def draw_room_from_spec_matplotlib(room_spec:dict):
+    fig, ax = plt.subplots()
+    dimensions = room_spec['room']['dimensions']
+    sources = room_spec.get('sources', [])
+    microphones = room_spec.get('microphones', [])
+    # Draw the room from the dimensions
+    ax.add_patch(patches.Rectangle((0, 0), dimensions[0], dimensions[1], linewidth=4, edgecolor='black', facecolor='none'))
+    # Draw sources as red circles
+    for source in sources:
+        if 'noise' in source:
+            ax.add_patch(patches.Circle((source['position'][0], source['position'][1]), 0.05, color='red'))
+        elif 'file' in source:
+            ax.add_patch(patches.Circle((source['position'][0], source['position'][1]), 0.05, color='blue'))
+    # Draw microphones as green circles
+    for mic in microphones:
+        ax.add_patch(patches.Circle((mic[0], mic[1]), 0.05, color='green'))
+    ax.set_xlim(-0.5, dimensions[0] + 0.5)
+    ax.set_ylim(-0.5, dimensions[1] + 0.5)
+    ax.set_aspect('equal', adjustable='box')
+    plt.xlabel("X (m)")
+    plt.ylabel("Y (m)")
+    plt.title("Room Visualisation")
+    plt.grid()
+    
 
-def filter_performance(filter_error, sample_rate:Optional[int]=None):
+def filter_performance(filter_error, sample_rate:Optional[int]=None, filter_name:Optional[str]=None):
     print(filter_error[~np.isnan(filter_error)])
     plt.figure()
     if sample_rate is not None:
@@ -128,7 +154,10 @@ def filter_performance(filter_error, sample_rate:Optional[int]=None):
     else:
         plt.plot(filter_error)
         plt.xlabel("Sample Index")
-    plt.title("Filter Performance")
+    if filter_name is not None:
+        plt.title(f"Filter Performance: {filter_name}")
+    else:
+        plt.title("Filter Performance")
     plt.ylabel("MSE")
     
 def fft_default_plot(signal,sample_rate, scale:Literal['log','linear']='log'):
@@ -164,5 +193,17 @@ def fft_default_plot(signal,sample_rate, scale:Literal['log','linear']='log'):
     plt.tight_layout() 
     plt.show()
     
-def experiment_plot():
-    None
+def plot_rrir(rrir, rtf_est, sample_rate):
+    fig, ax = plt.subplots(figsize=(10, 8))
+    # Plot true RRIR for mic 0 to mic 1 (assumes ref mic is 0)
+    ax.plot(np.arange(len(rrir[0])) / sample_rate, rrir[1], label='True RRIR')
+    
+    # Plot estimated RRIR for mic 0 to mic 1
+    rrir_est = np.fft.irfft(rtf_est[1])
+    ax.plot(np.arange(len(rrir_est)) / sample_rate, rrir_est, label='Estimated RRIR', color='orange')
+    ax.set_title('RRIR Comparison')
+    ax.set_xlabel('Time (s)')
+    ax.set_ylabel('Amplitude')
+    plt.grid()
+    ax.legend()
+    plt.tight_layout()

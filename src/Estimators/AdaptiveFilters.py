@@ -45,8 +45,9 @@ class LMS(AdaptiveFilter):
         error = y_sample - y_hat
         self.w = np.add(self.w, (self.mu * error * self._delay_line))
         if abs(error) > 1e2 or np.any(np.abs(self.w) > 1e3):
-            print(f"Huge update at sample")
-            print(f"x: {x_sample}, error: {error}, w: {self.w}")
+            None
+            #print(f"Huge update at sample")
+            #print(f"x: {x_sample}, error: {error}, w: {self.w}")
         return y_hat, error
     
     def reset(self):

@@ -26,4 +26,18 @@ class RTFEstimator():
         rtf_estimate = np.fft.rfft(rtf_estimate, axis=1)
         return rtf_estimate
     
-    # TODO: Add a step update func for learning curve
+    def estimate_rtf_step_update(self, mics, reference_idx=0):
+        """
+        Generator to estimate the RTF from the microphone signal using step updates.
+        :param mics: The microphone signal of shape (n_mics, n_samples).
+        :return: The estimated RTF.
+        """
+        n_mics, n_samples = mics.shape
+        rtf_estimate = np.zeros((n_mics, self.filter.tap_count))
+        for j in range(n_samples):
+            for i in range(n_mics):
+                # Apply the adaptive filter to estimate the RRIR
+                self.filter.w = rtf_estimate[i]
+                _, _ = self.filter.step_update(mics[i, j], mics[reference_idx, j])
+                rtf_estimate[i] = self.filter.w
+            yield rtf_estimate

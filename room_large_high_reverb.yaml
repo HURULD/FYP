@@ -1,0 +1,19 @@
+room:
+  dimensions:
+    [6, 5, 2.7]
+  rt60_tgt: 1.5
+  
+sources:
+  - position:
+      [1.5, 2.5, 1.76]
+    noise: 
+      length: 2
+    delay: 1.3
+
+microphones:
+  [
+    [0.5,2.375,1],
+    [0.5,2.4375,1],
+    [0.5,2.5625,1],
+    [0.5,2.625,1]
+  ]

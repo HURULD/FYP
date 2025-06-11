@@ -8,9 +8,9 @@ import matplotlib
 # Use the pgf backend (must be set before pyplot imported)
 matplotlib.use("pgf")
 matplotlib.rcParams.update({
-    "pgf.texsystem": "pdflatex",  # or "lualatex" or "xelatex" if you're using those
+    "pgf.texsystem": "pdflatex",
     "text.usetex": True,
-    "font.family": "serif",       # Match your document font
+    "font.family": "serif",
     "axes.labelsize": 10,
     "legend.fontsize": 9,
     "xtick.labelsize": 8,
@@ -79,6 +79,8 @@ class TestAdaptiveFilters:
         assert mse <= MSE_THRESHOLD
     
     def test_filter_4tap_awgn(self, filter_class: AdaptiveFilters.AdaptiveFilter, mu):
+        np.random.seed(42)
+        random.seed(42)
         log.info("Starting %s test with arbitrary 4 tap filter", filter_class.__name__)
         input_noise = Utils.GenSignal('noise',4,2000)
         # Reference filter
@@ -95,13 +97,22 @@ class TestAdaptiveFilters:
             for i in range(len(reference_filter_taps)):
                 tap_mse[i].append((test_filter.w[i]))
         mse = Evaluate.meansquared_error(reference_signal,y_hat)
-        # for i in range(len(reference_filter_taps)):
-        #     plt.plot(np.arange(16000), [reference_filter_taps[i]]*16000, c=plt.get_cmap('tab10').colors[i])
-        #     plt.plot(tap_mse[i], linestyle='dashed')
-        # plt.show()
+        fig, ax = plt.subplots(figsize=(2.8, 2.3))
+        for i in range(len(reference_filter_taps)):
+            ax.plot(np.arange(16000), [reference_filter_taps[i]]*16000, c=plt.get_cmap('tab10').colors[i])
+            ax.plot(tap_mse[i], linestyle='dashed')
+        ax.grid(True, which='major', linestyle='--', linewidth=0.5, alpha=0.7)
+        ax.set_xlim(left=0, right=len(input_noise))
+        ax.set_ylim(bottom=-5.2, top=5.2)
+        ax.set_xlabel("Sample")
+        ax.set_ylabel("Tap Value")
+        plt.tight_layout()
+        plt.savefig(f'tap-curve-{filter_class.__name__}.pgf', format='pgf')
         assert mse <= MSE_THRESHOLD
         
     def test_filter_learning_curve(self, filter_class: AdaptiveFilters.AdaptiveFilter, mu):
+        np.random.seed(42)
+        random.seed(42)
         log.info("Testing %s learning curve, error should generally decrease", filter_class.__name__)
         input_noise = Utils.GenSignal('noise',4,2000)
         # Reference filter

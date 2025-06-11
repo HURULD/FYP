@@ -4,6 +4,8 @@ from numpy.lib.stride_tricks import sliding_window_view
 from scipy import signal
 from scipy import interpolate
 import config_handler as config_handler
+from config_handler import Config
+import yaml
 
 def GenSignal(sig_type:Literal['noise','sine','cosine','impulse'],len:float,sample_rate:int,frequency:Optional[int]=0,format:Literal['real','complex']='real'):
     """Generate a signal of single type with given length and sample rate.
@@ -55,7 +57,7 @@ def compute_rtf(mics_rir:np.ndarray, reference=0, n_fft=None):
     RTF = np.array([np.divide(mic_h, mics_h_safe[reference]) for mic_h in mics_h_safe])
     return RTF
 
-def copy_room_spec_to_output(room_spec: dict, output_dir: str):
+def save_room_spec_to_output(room_spec: dict, output_dir: str):
     """
     Copy the room specification to the output directory.
     
@@ -115,3 +117,6 @@ def interpolate_stft_to_fft(stfts, fft_len):
         fft_interp[m] = np.interp(np.arange(fft_len), np.arange(stft_average.shape[1]), np.abs(stft_average[m]))
     
     return fft_interp
+
+def save_config_to_output(config: Config, location):
+    yaml.dump(config._config_values, open(location, 'w'), default_flow_style=False)

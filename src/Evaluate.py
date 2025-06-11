@@ -1,5 +1,6 @@
 import numpy as np
 import Estimators.AdaptiveFilters as AdaptiveFilters
+import Estimators.RTF_Estimator as RTF_Estimator
 import scipy.signal
 import config_handler
 
@@ -16,7 +17,7 @@ def meansquared_error_delay_corrected(x, y):
     correlation = scipy.signal.correlate(x, y, mode='full')
     delay = np.argmax(correlation) - (len(y) - 1)
     x = np.roll(x, -delay)
-    print(f"Estimated delay: {delay} samples, {delay / config_handler.get_config().audio.sample_rate} seconds")
+    #print(f"Estimated delay: {delay} samples, {delay / config_handler.get_config().audio.sample_rate} seconds")
     return meansquared_error(x, y)
 
 def filter_total_mse(x, y, filter:AdaptiveFilters.AdaptiveFilter):
@@ -34,8 +35,18 @@ def filter_learning_curve_mse(x,y,filter:AdaptiveFilters.AdaptiveFilter, referen
     tap_mse = np.zeros(len(x))
     for i in range(len(x)):
         filter.step_update(x[i], y[i])
-        tap_mse[i] = meansquared_error(filter.w, reference_taps)
+        tap_mse[i] = meansquared_error_delay_corrected(filter.w, reference_taps)
     return tap_mse
+
+def rtf_learning_curve_mse(mics, filter:AdaptiveFilters.AdaptiveFilter, ref_rtf, reference_idx=0):
+    
+    rtf_mse = np.zeros((mics.shape[0], mics.shape[1]))
+    estimator = RTF_Estimator.RTFEstimator(filter)
+    
+    for sample, rtf in enumerate(estimator.estimate_rtf_step_update(mics, reference_idx)):
+        for i in range(mics.shape[0]):
+            rtf_mse[i,sample] = meansquared_error_delay_corrected(np.abs(rtf[i]), np.abs(ref_rtf[i]))
+    return np.mean(rtf_mse, axis=0)
 
 def npm(h,h_hat):
     return normalised_projection_misalignment(h, h_hat)
