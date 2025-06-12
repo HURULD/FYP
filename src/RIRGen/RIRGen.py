@@ -73,7 +73,7 @@ class RIRGenerator:
     def measure_rt60(self):
         return self.room.measure_rt60()
     def save_audio(self, output_file:str):
-        self.room.mic_array.to_wav(
+        self.room.room.mic_array.to_wav(
             output_file,
             norm=True,
             bitdepth=np.int16,
