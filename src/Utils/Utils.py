@@ -7,7 +7,7 @@ import config_handler as config_handler
 from config_handler import Config
 import yaml
 
-def GenSignal(sig_type:Literal['noise','sine','cosine','impulse'],len:float,sample_rate:int,frequency:Optional[int]=0,format:Literal['real','complex']='real'):
+def GenSignal(sig_type:Literal['noise','sine','cosine','impulse'],len:float,sample_rate:int,frequency:Optional[int]=0,format:Literal['real','complex']='real', amplitude=1):
     """Generate a signal of single type with given length and sample rate.
 
     Args:
@@ -28,9 +28,12 @@ def GenSignal(sig_type:Literal['noise','sine','cosine','impulse'],len:float,samp
     if sig_type == 'noise':
         if format == 'real' or format == 'complex':
             output = np.random.normal(0,1,size=round(len*sample_rate))
+            output = output * amplitude
             return output
     if sig_type == 'sine':
         output = np.sin(np.arange(len*sample_rate)*frequency)
+        output = output * amplitude
+        return output
     else:
         raise NotImplementedError()
     

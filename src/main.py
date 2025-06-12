@@ -12,6 +12,7 @@ from Utils import Utils
 from Estimators import RTF_Estimator, AdaptiveFilters, Covariance
 import experiments
 import csv
+import os
 
 logger = logging.getLogger(__name__)
 
@@ -25,6 +26,8 @@ def main():
     parser.add_argument("-e", "--experiment", type=str, help="Experiment to run")
     parser.add_argument("-o", "--output", type=str, help="Output directory for the experiment")
     parser.add_argument("-f", "--filter", nargs="+", help="Filter to use for RTF estimation", default=["IPNLMS", "1024", "0.1"])
+    parser.add_argument("--title", type=str, help="Title for the visualisation", default=None)
+    parser.add_argument("--noise_length", type=float, help="Length of noise signal in seconds (For covariance whitening)")
     args = parser.parse_args()
     # Load config
     config_handler.load_config(args.config_file)
@@ -89,10 +92,12 @@ def main():
         np.savez(f"{args.output}/rtf.npz", rtf=rtf, rrir=rrir)
         Utils.save_config_to_output(config_handler.get_config(), f"{args.output}/config.yaml")
         
-        # Each result is written from the experiment function call
-        with open(f"{args.output}/rtf_accuracy_results.csv", "w") as f:
-            writer = csv.writer(f)
-            writer.writerow(["estimator", "mic_index", "mse"])
+        if not os.path.exists(f"{args.output}/rtf_accuracy_results.csv"):
+            logger.info("Creating RTF accuracy results CSV file")
+            # Each result is written from the experiment function call
+            with open(f"{args.output}/rtf_accuracy_results.csv", "w") as f:
+                writer = csv.writer(f)
+                writer.writerow(["estimator","Mean mse", "npm"])
         
         if args.experiment == "all":
             print(f"Running RTF accuracy experiment with adaptive filter {args.filter[0]}")
@@ -108,7 +113,14 @@ def main():
         elif args.experiment == "rtf_accuracy_covariance_whitening_identity":
             print("Running RTF accuracy experiment with covariance whitening")
             rtf_est = experiments.rtf_accuracy_covariance_whitening_identity(rtf, rirgen.room.room.mic_array.signals, args)
-            
+        
+        elif args.experiment == "rtf_accuracy_covariance_whitening_noise":
+            if args.noise_length is None:
+                logger.error('Noise length must be specified for covariance whitening noise experiment.')
+                raise ValueError('Noise length must be specified for covariance whitening noise experiment.')
+            print("Running RTF accuracy experiment with covariance whitening and noise")
+            rtf_est = experiments.rtf_accuracy_covariance_whitening_noisy(rtf, rirgen.room.room.mic_array.signals, args.noise_length, args)
+        
         else:
             logger.error(f"Experiment {args.experiment} does not exist.")
             raise NotImplementedError(f"Experiment {args.experiment} does not exist.")
@@ -143,7 +155,7 @@ def main():
             
             elif args.visualise == "room_render":
                 print("Rendering room from specification")
-                vis.draw_room_from_spec_matplotlib(room_spec)
+                vis.draw_room_from_spec_matplotlib(room_spec, small_plot=True, title_text=args.title)
                 
             elif args.visualise == "rtf_learning_curve":
                 vis.filter_performance(Eval.rtf_learning_curve_mse(rirgen.room.room.mic_array.signals, adaptive_filter, rtf), cfg.audio.sample_rate, adaptive_filter.__class__.__name__)

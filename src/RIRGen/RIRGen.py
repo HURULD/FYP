@@ -59,7 +59,7 @@ class RIRGenerator:
                         audio = signal.resample(audio, n_samples)
                     rir_gen.add_source(source['position'], audio, source['delay'])
                 elif source.get('noise') is not None:
-                    noise = Utils.GenSignal('noise', source['noise']['length'], config.audio.sample_rate, format='real')
+                    noise = Utils.GenSignal('noise', source['noise']['length'], config.audio.sample_rate, format='real', amplitude=source['noise'].get('amplitude', 1))
                     rir_gen.add_source(source['position'], noise, source['delay'])
                 else:
                     logger.warning("Source %s has no valid audio file or noise definition, skipping...", source)
@@ -80,11 +80,11 @@ class RIRGenerator:
         )
     def get_acoustic_transfer_functions(self):
         self._simulate()
-        # a[0] represents the first sim result (if using multiple sim techniques, default is ISM)
+        # a[0] is the RIR between the mic a and the first source (GOOD!)
         h = [a[0] for a in self.room.room.rir]
         # offset h to allow for negative time indexes
-        h_offset = [np.pad(h_i, (len(h_i), 0), 'constant', constant_values=(0,0)) for h_i in h]
-        return h_offset
+        #h_offset = [np.pad(h_i, (len(h_i), 0), 'constant', constant_values=(0,0)) for h_i in h]
+        return h
     
     def get_mic_audio(self):
         return [mic for mic in self.room.mic_array]

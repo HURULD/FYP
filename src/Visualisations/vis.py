@@ -120,8 +120,11 @@ def draw_room_from_spec_pygame(room_spec:dict):
             render()
     pygame.quit()
     
-def draw_room_from_spec_matplotlib(room_spec:dict):
-    fig, ax = plt.subplots()
+def draw_room_from_spec_matplotlib(room_spec:dict, small_plot=False, title_text:Optional[str]=None):
+    if small_plot:
+        fig, ax = plt.subplots(figsize=(2.8, 2.8))
+    else:    
+        fig, ax = plt.subplots()
     dimensions = room_spec['room']['dimensions']
     sources = room_spec.get('sources', [])
     microphones = room_spec.get('microphones', [])
@@ -136,29 +139,38 @@ def draw_room_from_spec_matplotlib(room_spec:dict):
     # Draw microphones as green circles
     for mic in microphones:
         ax.add_patch(patches.Circle((mic[0], mic[1]), 0.05, color='green'))
-    ax.set_xlim(-0.5, dimensions[0] + 0.5)
-    ax.set_ylim(-0.5, dimensions[1] + 0.5)
+    
+    if small_plot: # Fixed dimensions to look good in report
+        ax.set_xlim(-0.5, 6.5)
+        ax.set_ylim(-0.5, 6.5)
+    else:
+        ax.set_xlim(-0.5, dimensions[0] + 0.5)
+        ax.set_ylim(-0.5, dimensions[1] + 0.5)
     ax.set_aspect('equal', adjustable='box')
     plt.xlabel("X (m)")
     plt.ylabel("Y (m)")
-    plt.title("Room Visualisation")
+    if title_text is not None:
+        plt.title(title_text)
+    plt.tight_layout()
     plt.grid()
     
 
 def filter_performance(filter_error, sample_rate:Optional[int]=None, filter_name:Optional[str]=None):
     print(filter_error[~np.isnan(filter_error)])
-    plt.figure()
+    fig, ax = plt.subplots(figsize=(4.5, 3))
     if sample_rate is not None:
-        plt.plot(np.arange(len(filter_error)) / sample_rate, filter_error)
-        plt.xlabel("Time (s)")
+        ax.plot(np.arange(len(filter_error)) / sample_rate, filter_error)
+        ax.set_xlabel("Time (s)")
     else:
-        plt.plot(filter_error)
-        plt.xlabel("Sample Index")
+        ax.plot(filter_error)
+        ax.set_xlabel("Sample Index")
     if filter_name is not None:
-        plt.title(f"Filter Performance: {filter_name}")
+        ax.set_title(f"Filter Performance: {filter_name}")
     else:
-        plt.title("Filter Performance")
-    plt.ylabel("MSE")
+        ax.set_title("Filter Performance")
+    ax.set_ylabel("MSE")
+    plt.grid()
+    plt.tight_layout()
     
 def fft_default_plot(signal,sample_rate, scale:Literal['log','linear']='log'):
     
@@ -194,7 +206,7 @@ def fft_default_plot(signal,sample_rate, scale:Literal['log','linear']='log'):
     plt.show()
     
 def plot_rrir(rrir, rtf_est, sample_rate):
-    fig, ax = plt.subplots(figsize=(10, 8))
+    fig, ax = plt.subplots(figsize=(4.5, 3))
     # Plot true RRIR for mic 0 to mic 1 (assumes ref mic is 0)
     ax.plot(np.arange(len(rrir[0])) / sample_rate, rrir[1], label='True RRIR')
     
