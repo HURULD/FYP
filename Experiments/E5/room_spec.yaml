@@ -1,0 +1,34 @@
+microphones:
+- - 0.5
+  - 2.375
+  - 1
+- - 0.5
+  - 2.4375
+  - 1
+- - 0.5
+  - 2.5625
+  - 1
+- - 0.5
+  - 2.625
+  - 1
+room:
+  dimensions:
+  - 6
+  - 5
+  - 2.7
+  rt60_tgt: 0.2
+sources:
+- delay: 1.3
+  file: audio/ieee01f01.wav
+  position:
+  - 1.5
+  - 2.5
+  - 1.76
+- delay: 0
+  noise:
+    amplitude: 0.3
+    length: 6
+  position:
+  - 1.9
+  - 3
+  - 1.4
